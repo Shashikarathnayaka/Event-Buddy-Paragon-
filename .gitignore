@@ -1,0 +1,22 @@
+# Flutter/Dart
+.dart_tool/
+.packages
+.pub-cache/
+pubspec.lock
+
+# Android
+android/.gradle/
+android/build/
+*.apk
+*.so
+*.dex
+*.bin
+*.jar
+
+# iOS
+ios/Pods/
+ios/Runner.xcworkspace/
+ios/build/
+
+# Misc
+build/

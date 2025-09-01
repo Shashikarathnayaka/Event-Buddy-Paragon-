@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "127304838376",
+    "project_id": "event-buddy-92dfd",
+    "storage_bucket": "event-buddy-92dfd.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:127304838376:android:87805dc6778fcd8e37ed5d",
+        "android_client_info": {
+          "package_name": "com.example.event_buddy"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "127304838376-7a7656254eg1iq2motm3lhj2t9pu60e0.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.event_buddy",
+            "certificate_hash": "ea80022360ca83708532d188b61c0e307d729274"
+          }
+        },
+        {
+          "client_id": "127304838376-0bg8gf3pv1plq2bnas2r85sobctoiu7b.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAyCQjsq-A6C3xksGGKah_BuSIPBJaGuOk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "127304838376-0bg8gf3pv1plq2bnas2r85sobctoiu7b.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
