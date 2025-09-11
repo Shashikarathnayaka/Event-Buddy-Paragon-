@@ -1,7 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:event_buddy/screens/login_screen.dart';
-import 'package:event_buddy/screens/user_home_screen.dart';
-import 'package:event_buddy/screens/organizer_home_screen.dart';
+import 'package:event_buddy/screens/navigation_screen.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
@@ -17,12 +16,10 @@ class AuthGate extends StatelessWidget {
     if (doc.exists) {
       String role = doc['role'] ?? '';
       String firstName = doc['firstName'] ?? '';
-
-      if (role == 'User') {
-        return UserHomeScreen(userName: firstName);
-      } else if (role == 'Organizer') {
-        return OrganizerHomeScreen(userName: firstName);
-      }
+      return NavigationScreen(
+        userName: firstName,
+        isOrganizer: role == "Organizer" ? true : false,
+      );
     }
 
     return const LoginScreen();
@@ -53,7 +50,7 @@ class AuthGate extends StatelessWidget {
               return const LoginScreen();
             }
 
-            return OrganizerHomeScreen(userName: '');
+            return NavigationScreen(userName: '');
           },
         );
       },

@@ -6,7 +6,6 @@ class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
-  /// Register user with email & password
   Future<User?> registerUser({
     required String email,
     required String password,
@@ -34,9 +33,7 @@ class AuthService {
           "createdAt": FieldValue.serverTimestamp(),
         };
 
-        //  await _firestore.collection("users").doc(user.uid).set(userData);
-
-        if (role == "Organizer") {
+        if (role.toLowerCase() == "organizer") {
           await _firestore.collection("organizers").doc(user.uid).set(userData);
         } else {
           await _firestore.collection("users").doc(user.uid).set(userData);
@@ -48,8 +45,8 @@ class AuthService {
       throw Exception(e.message ?? "Registration failed");
     }
   }
+  ///// Login with email & password--------------------------------------------------
 
-  /// Login with email & password
   Future<Map<String, dynamic>> loginWithEmail(
     String email,
     String password,
@@ -61,6 +58,16 @@ class AuthService {
       );
 
       String uid = userCredential.user!.uid;
+      DocumentSnapshot orgDoc = await _firestore
+          .collection('organizers')
+          .doc(uid)
+          .get();
+      if (orgDoc.exists) {
+        return {
+          "role": orgDoc['role'] ?? '',
+          "firstName": orgDoc['firstName'] ?? '',
+        };
+      }
 
       DocumentSnapshot userDoc = await _firestore
           .collection('users')
@@ -70,17 +77,6 @@ class AuthService {
         return {
           "role": userDoc['role'] ?? '',
           "firstName": userDoc['firstName'] ?? '',
-        };
-      }
-
-      DocumentSnapshot orgDoc = await _firestore
-          .collection('organizers')
-          .doc(uid)
-          .get();
-      if (orgDoc.exists) {
-        return {
-          "role": orgDoc['role'] ?? '',
-          "firstName": orgDoc['firstName'] ?? '',
         };
       }
 
@@ -118,8 +114,9 @@ class AuthService {
     }
   }
 
-  // show event
   User? get currentUser => _auth.currentUser;
+
+  get userId => null;
 
   Future<User?> signInWithEmailAndPassword(
     String email,
@@ -135,35 +132,25 @@ class AuthService {
   Future<void> signOut() async {
     await _auth.signOut();
   }
-   
-Future<void> joinEvent(DocumentSnapshot eventDoc) async {
-  final user = FirebaseAuth.instance.currentUser;
-  if (user == null) return; 
-  final userDocRef = FirebaseFirestore.instance.collection('users').doc(user.uid);
-  final myEventsRef = userDocRef.collection('myEvents').doc(eventDoc.id);
 
-  await myEventsRef.set({
-    'name': eventDoc['name'],
-    'date': eventDoc['date'],
-    'location': eventDoc['location'],
-    'joinedAt': FieldValue.serverTimestamp(), 
-  });
+  Future<void> joinEvent(DocumentSnapshot eventDoc) async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+    final userDocRef = _firestore.collection('users').doc(user.uid);
+    final myEventsRef = userDocRef.collection('myEvents').doc(eventDoc.id);
+
+    await myEventsRef.set({
+      'name': eventDoc['name'],
+      'date': eventDoc['date'],
+      'location': eventDoc['location'],
+      'joinedAt': FieldValue.serverTimestamp(),
+    });
   }
 
-  // add event in the my event 
-
-//   Future<void> joinEvent(DocumentSnapshot eventDoc) async {
-//   final user = FirebaseAuth.instance.currentUser;
-//   if (user == null) return; 
-
-//   final userDocRef = FirebaseFirestore.instance.collection('users').doc(user.uid);
-//   final myEventsRef = userDocRef.collection('myEvents').doc(eventDoc.id);
-
-//   await myEventsRef.set({
-//     'name': eventDoc['name'],
-//     'date': eventDoc['date'],
-//     'location': eventDoc['location'],
-//     'joinedAt': FieldValue.serverTimestamp(), 
-//   });
-// }
+  Future<void> leaveEvent(String id) async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+    final userDocRef = _firestore.collection('users').doc(user.uid);
+    await userDocRef.collection('myEvents').doc(id).delete();
+  }
 }

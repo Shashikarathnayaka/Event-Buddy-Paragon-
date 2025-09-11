@@ -88,7 +88,7 @@ class _AddEventScreenState extends State<AddEventScreen> {
       appBar: AppBar(
         title: const Text(
           'ADD EVENT',
-          style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
         ),
         centerTitle: true,
         backgroundColor: const Color.fromARGB(255, 53, 137, 158),
@@ -131,49 +131,32 @@ class _AddEventScreenState extends State<AddEventScreen> {
 
                 TextFormField(
                   controller: _eventNameController,
-                  decoration: _inputDecoration("Event Name"),
+                  decoration:
+                      _inputDecoration(
+                        "Event Name",
+                        hint: "Enter event name",
+                      ).copyWith(
+                        prefixIcon: const Icon(Icons.celebration),
+                        filled: true,
+                        fillColor: const Color(0xFFF5F5F5),
+                      ),
                   validator: (v) => (v == null || v.trim().isEmpty)
                       ? "Please enter event name"
                       : null,
                 ),
                 const SizedBox(height: 18),
-
-                // TextFormField(
-                //   controller: _eventDateController,
-                //   readOnly: true,
-                //   decoration: _inputDecoration(
-                //     "Event Date",
-                //     prefixIcon: Icons.calendar_month,
-                //   ),
-                //   onTap: () async {
-                //     DateTime? pickedDate = await showDatePicker(
-                //       context: context,
-                //       initialDate: DateTime.now(),
-                //       firstDate: DateTime(1900),
-                //       lastDate: DateTime(2100),
-                //     );
-                //     if (pickedDate != null) {
-                //       String formattedDate =
-                //           "${pickedDate.day.toString().padLeft(2, '0')}/"
-                //           "${pickedDate.month.toString().padLeft(2, '0')}/"
-                //           "${pickedDate.year}";
-                //       setState(() {
-                //         _eventDateController.text = formattedDate;
-                //       });
-                //     }
-                //   },
-                //   validator: (v) => (v == null || v.trim().isEmpty)
-                //       ? "Please enter event date"
-                //       : null,
-                // ),
-                // const SizedBox(height: 18),
                 TextFormField(
                   controller: _eventDateController,
                   readOnly: true,
-                  decoration: _inputDecoration(
-                    "Event Date",
-                  ).copyWith(prefixIcon: Icon(Icons.calendar_month)),
-
+                  decoration:
+                      _inputDecoration(
+                        "Event Date",
+                        hint: "Enter event name",
+                      ).copyWith(
+                        prefixIcon: const Icon(Icons.calendar_month),
+                        filled: true,
+                        fillColor: const Color(0xFFF5F5F5),
+                      ),
                   onTap: () async {
                     DateTime? pickedDate = await showDatePicker(
                       context: context,
@@ -199,7 +182,15 @@ class _AddEventScreenState extends State<AddEventScreen> {
 
                 TextFormField(
                   controller: _eventLocationController,
-                  decoration: _inputDecoration("Event Location"),
+                  decoration:
+                      _inputDecoration(
+                        "Event Location",
+                        hint: "Enter event name",
+                      ).copyWith(
+                        prefixIcon: const Icon(Icons.location_on),
+                        filled: true,
+                        fillColor: const Color(0xFFF5F5F5),
+                      ),
                   validator: (v) => (v == null || v.trim().isEmpty)
                       ? "Please enter event location"
                       : null,
@@ -209,7 +200,15 @@ class _AddEventScreenState extends State<AddEventScreen> {
                 TextFormField(
                   controller: _eventDescriptionController,
                   maxLines: 4,
-                  decoration: _inputDecoration("Event Description"),
+                  decoration:
+                      _inputDecoration(
+                        "Event Description",
+                        hint: "Enter event name",
+                      ).copyWith(
+                        prefixIcon: const Icon(Icons.celebration),
+                        filled: true,
+                        fillColor: const Color(0xFFF5F5F5),
+                      ),
                   validator: (v) => (v == null || v.trim().isEmpty)
                       ? "Please enter event description"
                       : null,

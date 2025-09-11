@@ -14,8 +14,9 @@ class UserService {
     try {
       String collectionName = role == "User" ? "users" : "organizers";
 
-      DocumentReference userDocRef =
-          _firestore.collection(collectionName).doc(user.uid);
+      DocumentReference userDocRef = _firestore
+          .collection(collectionName)
+          .doc(user.uid);
 
       DocumentSnapshot docSnapshot = await userDocRef.get();
 

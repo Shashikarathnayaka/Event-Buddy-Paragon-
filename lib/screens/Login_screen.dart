@@ -1,6 +1,5 @@
+import 'package:event_buddy/screens/navigation_screen.dart';
 import 'package:event_buddy/services/auth_service.dart';
-import 'package:event_buddy/screens/organizer_home_screen.dart';
-import 'package:event_buddy/screens/user_home_screen.dart';
 import 'package:event_buddy/screens/register_screen.dart';
 import 'package:event_buddy/screens/role_screen.dart';
 import 'package:event_buddy/utils/core_utils.dart';
@@ -80,21 +79,15 @@ class _LoginPageState extends State<LoginScreen> {
   }
 
   void _navigateHome(String role, String firstName) {
-    if (role == 'Organizer') {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(
-          builder: (context) => OrganizerHomeScreen(userName: firstName),
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(
+        builder: (context) => NavigationScreen(
+          userName: firstName,
+          isOrganizer: role == "Organizer" ? true : false,
         ),
-      );
-    } else {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(
-          builder: (context) => UserHomeScreen(userName: firstName),
-        ),
-      );
-    }
+      ),
+    );
   }
 
   InputDecoration _inputDecoration(String hint, IconData icon) {
@@ -110,7 +103,7 @@ class _LoginPageState extends State<LoginScreen> {
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color:  Color.fromARGB(255, 53, 137, 158),),
+        borderSide: const BorderSide(color: Color.fromARGB(255, 53, 137, 158)),
       ),
       errorBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
@@ -186,7 +179,7 @@ class _LoginPageState extends State<LoginScreen> {
 
                 ElevatedButton(
                   style: ElevatedButton.styleFrom(
-                    backgroundColor:  Color.fromARGB(255, 53, 137, 158),
+                    backgroundColor: Color.fromARGB(255, 53, 137, 158),
                     foregroundColor: Colors.white,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(30),

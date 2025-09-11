@@ -5,6 +5,8 @@
         "firebasestorage",
         "googleusercontent",
         "mobilesdk",
+        "sarverlayer",
         "sobctoiu"
-    ]
+    ],
+    "cmake.sourceDirectory": "E:/PARAGON PROJECTS/event buddy/event_buddy/linux"
 }

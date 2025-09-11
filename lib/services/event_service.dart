@@ -7,37 +7,6 @@ class EventService {
   final _db = FirebaseFirestore.instance;
   final _storage = FirebaseStorage.instance;
 
-  // Future<void> addEvent({
-  //   required String name,
-  //   required String date,
-  //   required String location,
-  //   required String description,
-  //   String? imagePath,
-  //   String? organizer,
-  // }) async {
-  //   String? imageUrl;
-
-  //   if (imagePath != null && imagePath.isNotEmpty) {
-  //     final file = File(imagePath);
-  //     final ext = p.extension(imagePath);
-  //     final fileName = '${DateTime.now().millisecondsSinceEpoch}$ext';
-  //     final ref = _storage.ref().child('event_images/$fileName');
-
-  //     await ref.putFile(file);
-  //     imageUrl = await ref.getDownloadURL();
-  //   }
-
-  //   await _db.collection('events').add({
-  //     'name': name,
-  //     'description': description,
-  //     'date': date,
-  //     'location': location,
-  //     'imageUrl': imageUrl,
-  //     'organizer': organizer,
-  //     'createdAt': FieldValue.serverTimestamp(),
-  //   });
-  // }
-
   Future<void> addEvent({
     required String name,
     required String date,

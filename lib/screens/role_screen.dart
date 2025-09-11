@@ -1,8 +1,7 @@
+import 'package:event_buddy/screens/navigation_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:event_buddy/screens/user_home_screen.dart';
-import 'package:event_buddy/screens/organizer_home_screen.dart';
 import 'package:event_buddy/services/auth_service.dart';
 
 class RoleSelectionScreen extends StatelessWidget {
@@ -47,11 +46,10 @@ class RoleSelectionScreen extends StatelessWidget {
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
-          builder: (context) => role == "User"
-              ? UserHomeScreen(userName: firstName ?? user?.displayName ?? "")
-              : OrganizerHomeScreen(
-                  userName: firstName ?? user?.displayName ?? "",
-                ),
+          builder: (context) => NavigationScreen(
+            userName: firstName ?? user?.displayName ?? "",
+            isOrganizer: true,
+          ),
         ),
       );
     } catch (e) {
