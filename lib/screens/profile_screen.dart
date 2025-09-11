@@ -381,9 +381,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
           if (_isProcessingImage)
             const Padding(
               padding: EdgeInsets.only(top: 10),
-              child: Text(
-                'Processing image...',
-                style: TextStyle(color: Colors.grey, fontSize: 12),
+              child: Center(
+                child: Text(
+                  'Processing image...',
+                  style: TextStyle(color: Colors.grey, fontSize: 12),
+                ),
               ),
             ),
           const SizedBox(height: 30),
@@ -495,6 +497,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       ),
     );
   }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -506,6 +509,40 @@ class _ProfileScreenState extends State<ProfileScreen> {
         centerTitle: true,
         backgroundColor: const Color.fromARGB(255, 53, 137, 158),
         foregroundColor: Colors.white,
+
+        leading: PopupMenuButton<String>(
+          icon: const Icon(
+            Icons.more_vert,
+            color: Color.fromARGB(255, 221, 226, 230),
+            size: 28,
+          ),
+          color: Colors.white,
+          elevation: 8,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(15),
+          ),
+          onSelected: (value) {
+            if (value == 'edit') {
+              setState(() => _isEditing = true);
+            }
+          },
+          itemBuilder: (BuildContext context) => [
+            PopupMenuItem<String>(
+              value: 'edit',
+              child: ListTile(
+                leading: Icon(Icons.edit, color: Colors.blue),
+                title: const Text(
+                  'Edit Profile',
+                  style: TextStyle(
+                    fontWeight: FontWeight.w500,
+                    color: Colors.black87,
+                  ),
+                ),
+                contentPadding: EdgeInsets.zero,
+              ),
+            ),
+          ],
+        ),
         actions: [
           IconButton(
             icon: const Icon(Icons.logout_outlined),
@@ -554,60 +591,30 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     child: _buildProfileForm(),
                   ),
                 ),
-                Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: _isEditing
-                      ? Row(
-                          children: [
-                            Expanded(
-                              child: ElevatedButton(
-                                onPressed: () {
-                                  setState(() => _isEditing = false);
-                                  _loadUserData();
-                                },
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: Colors.grey,
-                                  foregroundColor: Colors.white,
-                                ),
-                                child: const Text('Cancel'),
-                              ),
-                            ),
-                            const SizedBox(width: 16),
-                            Expanded(
-                              child: ElevatedButton(
-                                onPressed: (_isLoading || _isProcessingImage)
-                                    ? null
-                                    : _saveProfile,
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: const Color.fromARGB(
-                                    255,
-                                    53,
-                                    137,
-                                    158,
-                                  ),
-                                  foregroundColor: Colors.white,
-                                ),
-                                child: _isLoading
-                                    ? const SizedBox(
-                                        height: 20,
-                                        width: 20,
-                                        child: CircularProgressIndicator(
-                                          strokeWidth: 2,
-                                          valueColor:
-                                              AlwaysStoppedAnimation<Color>(
-                                                Colors.white,
-                                              ),
-                                        ),
-                                      )
-                                    : const Text('Save Profile'),
-                              ),
-                            ),
-                          ],
-                        )
-                      : SizedBox(
-                          width: double.infinity,
+                if (_isEditing)
+                  Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Row(
+                      children: [
+                        Expanded(
                           child: ElevatedButton(
-                            onPressed: () => setState(() => _isEditing = true),
+                            onPressed: () {
+                              setState(() => _isEditing = false);
+                              _loadUserData();
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.grey,
+                              foregroundColor: Colors.white,
+                            ),
+                            child: const Text('Cancel'),
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: ElevatedButton(
+                            onPressed: (_isLoading || _isProcessingImage)
+                                ? null
+                                : _saveProfile,
                             style: ElevatedButton.styleFrom(
                               backgroundColor: const Color.fromARGB(
                                 255,
@@ -617,10 +624,23 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               ),
                               foregroundColor: Colors.white,
                             ),
-                            child: const Text('Edit Profile'),
+                            child: _isLoading
+                                ? const SizedBox(
+                                    height: 20,
+                                    width: 20,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      valueColor: AlwaysStoppedAnimation<Color>(
+                                        Colors.white,
+                                      ),
+                                    ),
+                                  )
+                                : const Text('Save Profile'),
                           ),
                         ),
-                ),
+                      ],
+                    ),
+                  ),
               ],
             ),
     );

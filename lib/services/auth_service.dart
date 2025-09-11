@@ -153,4 +153,11 @@ class AuthService {
     final userDocRef = _firestore.collection('users').doc(user.uid);
     await userDocRef.collection('myEvents').doc(id).delete();
   }
+
+  Future<void> saveUserFromGoogle(User user) async {}
+
+  // Future<Future<Map<String, dynamic>?>> getUserData(String uid) async {}
 }
+
+
+
