@@ -155,9 +155,4 @@ class AuthService {
   }
 
   Future<void> saveUserFromGoogle(User user) async {}
-
-  // Future<Future<Map<String, dynamic>?>> getUserData(String uid) async {}
 }
-
-
-
