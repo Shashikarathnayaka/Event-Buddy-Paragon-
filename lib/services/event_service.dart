@@ -1,5 +1,7 @@
 import 'dart:convert';
+import 'dart:developer';
 import 'dart:io';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 
@@ -17,6 +19,7 @@ class EventService {
     required String organizerId,
   }) async {
     String? base64Image;
+    log("Organizer: $organizerId");
     print(organizer);
     if (imagePath != null && imagePath.isNotEmpty) {
       final file = File(imagePath);
