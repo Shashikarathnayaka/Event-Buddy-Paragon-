@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:developer';
 import 'dart:typed_data';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:event_buddy/services/join_leave_event.dart';
@@ -94,7 +95,7 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
         }
       }
     } catch (e) {
-      print('Error resolving image info: $e');
+      log('Error resolving image info: $e');
     }
 
     return {'url': null, 'base64': null};

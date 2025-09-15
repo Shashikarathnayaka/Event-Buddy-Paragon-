@@ -1,3 +1,5 @@
+import 'dart:developer';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:event_buddy/screens/login_screen.dart';
 import 'package:event_buddy/screens/navigation_screen.dart';
@@ -35,7 +37,7 @@ class AuthGate extends StatelessWidget {
         }
 
         if (!snapshot.hasData || snapshot.data == null) {
-          print("ERROR");
+          log("ERROR");
 
           return const LoginScreen();
         }

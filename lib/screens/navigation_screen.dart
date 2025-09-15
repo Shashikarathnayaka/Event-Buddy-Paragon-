@@ -72,7 +72,6 @@ class CustomSearchDelegate extends SearchDelegate {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final bool? isOrganizer;
 
-  // Add isOrganizer parameter to the constructor
   CustomSearchDelegate({this.isOrganizer});
 
   @override
@@ -80,7 +79,7 @@ class CustomSearchDelegate extends SearchDelegate {
     final theme = Theme.of(context);
     return theme.copyWith(
       appBarTheme: const AppBarTheme(
-        backgroundColor: const Color.fromARGB(255, 53, 137, 158),
+        backgroundColor: Color.fromARGB(255, 59, 155, 179),
         elevation: 0,
         iconTheme: IconThemeData(color: Colors.white),
       ),

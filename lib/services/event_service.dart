@@ -28,7 +28,7 @@ class EventService {
         final bytes = await file.readAsBytes();
         base64Image = base64Encode(bytes);
       } else {
-        print(" File not found at path: $imagePath");
+        log(" File not found at path: $imagePath");
       }
     }
 

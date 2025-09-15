@@ -325,6 +325,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       53,
                       137,
                       158,
+                      // ignore: deprecated_member_use
                     ).withOpacity(0.7),
                   ),
           ),

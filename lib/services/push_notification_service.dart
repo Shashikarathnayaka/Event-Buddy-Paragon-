@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:developer';
 import 'dart:io';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
@@ -6,12 +7,11 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
-// Top-level function for background message handling
 @pragma('vm:entry-point')
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-  print("Handling a background message: ${message.messageId}");
-  print("Message data: ${message.data}");
-  print("Message notification: ${message.notification?.title}");
+  log("Handling a background message: ${message.messageId}");
+  log("Message data: ${message.data}");
+  log("Message notification: ${message.notification?.title}");
 }
 
 class PushNotificationService {
@@ -23,15 +23,12 @@ class PushNotificationService {
   static final FirebaseAuth _auth = FirebaseAuth.instance;
   static BuildContext? _context;
 
-  // Set context for showing navigation and feedback
   static void setContext(BuildContext context) {
     _context = context;
   }
 
-  // Initialize push notifications
   static Future<void> initialize() async {
     try {
-      // Request permission for iOS and Android 13+
       NotificationSettings settings = await _firebaseMessaging
           .requestPermission(
             alert: true,
@@ -45,41 +42,35 @@ class PushNotificationService {
 
       print('User granted permission: ${settings.authorizationStatus}');
 
-      // Initialize local notifications
       await _initializeLocalNotifications();
 
-      // Get and save the FCM token
       String? token = await _firebaseMessaging.getToken();
       print("FCM Token: $token");
       await _saveTokenToFirestore(token);
 
-      // Set up message handlers
       FirebaseMessaging.onBackgroundMessage(
         _firebaseMessagingBackgroundHandler,
       );
       FirebaseMessaging.onMessage.listen(_handleForegroundMessage);
       FirebaseMessaging.onMessageOpenedApp.listen(_handleMessageOpenedApp);
 
-      // Handle notification tap when app is terminated
       RemoteMessage? initialMessage = await _firebaseMessaging
           .getInitialMessage();
       if (initialMessage != null) {
         _handleMessageOpenedApp(initialMessage);
       }
 
-      // Handle token refresh
       _firebaseMessaging.onTokenRefresh.listen((token) {
-        print("New FCM Token: $token");
+        log("New FCM Token: $token");
         _saveTokenToFirestore(token);
       });
 
-      print("Push notifications initialized successfully");
+      log("Push notifications initialized successfully");
     } catch (e) {
-      print("Error initializing push notifications: $e");
+      log("Error initializing push notifications: $e");
     }
   }
 
-  // Initialize local notifications
   static Future<void> _initializeLocalNotifications() async {
     const AndroidInitializationSettings initializationSettingsAndroid =
         AndroidInitializationSettings('@mipmap/ic_launcher');
@@ -102,13 +93,11 @@ class PushNotificationService {
       onDidReceiveNotificationResponse: _onNotificationTapped,
     );
 
-    // Create notification channel for Android
     if (Platform.isAndroid) {
       await _createNotificationChannels();
     }
   }
 
-  // Create notification channels for Android
   static Future<void> _createNotificationChannels() async {
     final AndroidFlutterLocalNotificationsPlugin? androidImplementation =
         _localNotifications
@@ -117,7 +106,6 @@ class PushNotificationService {
             >();
 
     if (androidImplementation != null) {
-      // Main event channel
       await androidImplementation.createNotificationChannel(
         const AndroidNotificationChannel(
           'event_buddy_channel',
@@ -128,7 +116,6 @@ class PushNotificationService {
         ),
       );
 
-      // New events channel
       await androidImplementation.createNotificationChannel(
         const AndroidNotificationChannel(
           'new_events',
@@ -139,7 +126,6 @@ class PushNotificationService {
         ),
       );
 
-      // Event updates channel
       await androidImplementation.createNotificationChannel(
         const AndroidNotificationChannel(
           'event_updates',
@@ -151,7 +137,6 @@ class PushNotificationService {
     }
   }
 
-  // Save FCM token to Firestore
   static Future<void> _saveTokenToFirestore(String? token) async {
     if (token == null) return;
 
@@ -159,7 +144,6 @@ class PushNotificationService {
     if (userId == null) return;
 
     try {
-      // Try to save to users collection first
       final userDoc = await _firestore.collection('users').doc(userId).get();
       if (userDoc.exists) {
         await _firestore.collection('users').doc(userId).update({
@@ -169,7 +153,6 @@ class PushNotificationService {
         return;
       }
 
-      // If not found in users, try organizers collection
       final orgDoc = await _firestore
           .collection('organizers')
           .doc(userId)
@@ -180,7 +163,6 @@ class PushNotificationService {
           'lastTokenUpdate': FieldValue.serverTimestamp(),
         });
       } else {
-        // If user doesn't exist in either collection, create in users
         await _firestore.collection('users').doc(userId).set({
           'fcmToken': token,
           'lastTokenUpdate': FieldValue.serverTimestamp(),
@@ -188,23 +170,19 @@ class PushNotificationService {
         }, SetOptions(merge: true));
       }
     } catch (e) {
-      print('Error saving FCM token: $e');
+      log('Error saving FCM token: $e');
     }
   }
 
-  // Handle foreground messages
   static Future<void> _handleForegroundMessage(RemoteMessage message) async {
-    print("Handling foreground message: ${message.messageId}");
-    print("Message data: ${message.data}");
+    log("Handling foreground message: ${message.messageId}");
+    log("Message data: ${message.data}");
 
-    // Show local notification when app is in foreground
     await _showLocalNotification(message);
 
-    // Show in-app feedback
     _showInAppNotification(message);
   }
 
-  // Show local notification
   static Future<void> _showLocalNotification(RemoteMessage message) async {
     const AndroidNotificationDetails androidPlatformChannelSpecifics =
         AndroidNotificationDetails(
@@ -240,7 +218,6 @@ class PushNotificationService {
     );
   }
 
-  // Show in-app notification
   static void _showInAppNotification(RemoteMessage message) {
     if (_context == null) return;
 
@@ -248,79 +225,40 @@ class PushNotificationService {
     String title = message.notification?.title ?? 'New notification';
     String body = message.notification?.body ?? '';
 
-    // Customize message based on type
     switch (type) {
       case 'event_created':
-        title = '🎉 New Event Available!';
+        title = ' New Event Available!';
         body = message.data['eventName'] != null
             ? 'New event: ${message.data['eventName']}'
             : body;
         break;
       case 'event_updated':
-        title = '📝 Event Updated';
+        title = ' Event Updated';
         break;
       case 'event_deleted':
-        title = '❌ Event Cancelled';
+        title = ' Event Cancelled';
         break;
     }
-
-    ScaffoldMessenger.of(_context!).showSnackBar(
-      SnackBar(
-        content: Row(
-          children: [
-            const Icon(Icons.notifications, color: Colors.white, size: 20),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    title,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 14,
-                    ),
-                  ),
-                  if (body.isNotEmpty)
-                    Text(body, style: const TextStyle(fontSize: 12)),
-                ],
-              ),
-            ),
-          ],
-        ),
-        backgroundColor: const Color.fromARGB(255, 53, 137, 158),
-        duration: const Duration(seconds: 4),
-        action: SnackBarAction(
-          label: 'View',
-          textColor: Colors.white,
-          onPressed: () => _handleNotificationNavigation(message.data),
-        ),
-      ),
-    );
   }
 
-  // Handle notification tap
   static void _onNotificationTapped(NotificationResponse response) {
-    print("Notification tapped with payload: ${response.payload}");
+    log("Notification tapped with payload: ${response.payload}");
 
     if (response.payload != null) {
       try {
         Map<String, dynamic> data = jsonDecode(response.payload!);
         _handleNotificationNavigation(data);
       } catch (e) {
-        print("Error parsing notification payload: $e");
+        log("Error parsing notification payload: $e");
       }
     }
   }
 
-  // Handle message opened app
   static void _handleMessageOpenedApp(RemoteMessage message) {
     print("Message clicked: ${message.messageId}");
     _handleNotificationNavigation(message.data);
   }
 
-  // Handle navigation based on notification data
   static void _handleNotificationNavigation(Map<String, dynamic> data) {
     if (_context == null) return;
 
@@ -333,7 +271,6 @@ class PushNotificationService {
       case 'event_created':
       case 'event_updated':
         if (eventId != null) {
-          // Navigate to event detail - you'll need to implement this navigation
           _navigateToEventDetail(eventId);
         }
         break;
@@ -348,19 +285,14 @@ class PushNotificationService {
         );
         break;
       default:
-        print("Unknown notification type: $type");
+        log("Unknown notification type: $type");
     }
   }
 
-  // Navigate to event detail (placeholder - implement based on your navigation)
   static void _navigateToEventDetail(String eventId) {
     if (_context == null) return;
 
-    print("Navigating to event detail: $eventId");
-
-    // TODO: Implement navigation to your EventDetailScreen
-    // Example:
-    // Navigator.of(_context!).pushNamed('/event-detail', arguments: eventId);
+    log("Navigating to event detail: $eventId");
 
     ScaffoldMessenger.of(_context!).showSnackBar(
       SnackBar(
@@ -370,7 +302,6 @@ class PushNotificationService {
     );
   }
 
-  // Send event created notification (called after event creation)
   static Future<void> sendEventCreatedNotification({
     required String eventId,
     required String eventName,
@@ -379,7 +310,6 @@ class PushNotificationService {
     String? eventDate,
   }) async {
     try {
-      // Get all user tokens except the organizer
       final tokens = await _getAllUserTokensExcept(organizerId);
 
       if (tokens.isEmpty) {
@@ -387,14 +317,11 @@ class PushNotificationService {
         return;
       }
 
-      // This would typically call your backend API or Cloud Function
-      // For now, we'll just log it
       print("Would send notification to ${tokens.length} users:");
       print("Event: $eventName (ID: $eventId)");
       print("Location: $eventLocation");
       print("Date: $eventDate");
 
-      // Show success feedback to organizer
       if (_context != null) {
         ScaffoldMessenger.of(_context!).showSnackBar(
           SnackBar(
@@ -406,18 +333,16 @@ class PushNotificationService {
         );
       }
     } catch (e) {
-      print("Error sending event created notification: $e");
+      log("Error sending event created notification: $e");
     }
   }
 
-  // Get all user FCM tokens except the specified user
   static Future<List<String>> _getAllUserTokensExcept(
     String exceptUserId,
   ) async {
     List<String> tokens = [];
 
     try {
-      // Get tokens from users collection
       final usersQuery = await _firestore
           .collection('users')
           .where('fcmToken', isNotEqualTo: null)
@@ -429,7 +354,6 @@ class PushNotificationService {
         }
       }
 
-      // Get tokens from organizers collection
       final organizersQuery = await _firestore
           .collection('organizers')
           .where('fcmToken', isNotEqualTo: null)
@@ -441,54 +365,49 @@ class PushNotificationService {
         }
       }
     } catch (e) {
-      print("Error getting user tokens: $e");
+      log("Error getting user tokens: $e");
     }
 
-    return tokens.toSet().toList(); // Remove duplicates
+    return tokens.toSet().toList();
   }
 
-  // Subscribe to topic
   static Future<void> subscribeToTopic(String topic) async {
     try {
       await _firebaseMessaging.subscribeToTopic(topic);
-      print("Subscribed to topic: $topic");
+      log("Subscribed to topic: $topic");
     } catch (e) {
-      print("Error subscribing to topic $topic: $e");
+      log("Error subscribing to topic $topic: $e");
     }
   }
 
-  // Unsubscribe from topic
   static Future<void> unsubscribeFromTopic(String topic) async {
     try {
       await _firebaseMessaging.unsubscribeFromTopic(topic);
-      print("Unsubscribed from topic: $topic");
+      log("Unsubscribed from topic: $topic");
     } catch (e) {
-      print("Error unsubscribing from topic $topic: $e");
+      log("Error unsubscribing from topic $topic: $e");
     }
   }
 
-  // Subscribe to common topics
   static Future<void> subscribeToCommonTopics() async {
     await subscribeToTopic('all_events');
     await subscribeToTopic('event_updates');
   }
 
-  // Get FCM token
   static Future<String?> getToken() async {
     try {
       return await _firebaseMessaging.getToken();
     } catch (e) {
-      print("Error getting FCM token: $e");
+      log("Error getting FCM token: $e");
       return null;
     }
   }
 
-  // Show a test notification (for testing purposes)
   static Future<void> showTestNotification() async {
     await _showLocalNotification(
       RemoteMessage(
         notification: const RemoteNotification(
-          title: '🎉 Test Notification',
+          title: ' Test Notification',
           body: 'This is a test notification from Event Buddy!',
         ),
         data: {'type': 'test', 'message': 'Test notification'},
@@ -496,7 +415,6 @@ class PushNotificationService {
     );
   }
 
-  // Handle event creation (called from AddEventScreen)
   static Future<void> handleEventCreated({
     required String eventId,
     required String eventName,
@@ -505,10 +423,9 @@ class PushNotificationService {
     String? eventDate,
     String? eventDescription,
   }) async {
-    print("Handling event creation notification...");
+    log("Handling event creation notification...");
 
     try {
-      // Send notifications to users
       await sendEventCreatedNotification(
         eventId: eventId,
         eventName: eventName,
@@ -517,11 +434,10 @@ class PushNotificationService {
         eventDate: eventDate,
       );
 
-      // Show preview notification to organizer
       await _showLocalNotification(
         RemoteMessage(
           notification: RemoteNotification(
-            title: '🎉 Event Created Successfully!',
+            title: ' Event Created Successfully!',
             body:
                 'Your event "$eventName" is now live and users are being notified!',
           ),
@@ -534,7 +450,7 @@ class PushNotificationService {
         ),
       );
     } catch (e) {
-      print("Error handling event creation: $e");
+      log("Error handling event creation: $e");
       if (_context != null) {
         ScaffoldMessenger.of(_context!).showSnackBar(
           const SnackBar(
