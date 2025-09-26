@@ -1,3 +1,4 @@
+import 'dart:developer';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:event_buddy/screens/event_detail_screen.dart';
 import 'package:event_buddy/screens/navigation_screen.dart';
@@ -52,83 +53,330 @@ class _MyEventsContentState extends State<MyEventsContent> {
             return const Center(child: Text("No data found."));
           }
 
-          print(userId);
+          log(userId);
 
           final userData = snapshot.data!.data() as Map<String, dynamic>? ?? {};
           final joinedEventIds = List<String>.from(
             userData['joinedEvents'] ?? [],
           );
 
-          if (joinedEventIds.isEmpty) {
-            return const Center(
-              child: Text(
-                "You haven't joined any events yet.",
-                style: TextStyle(
-                  fontSize: 18,
-                  color: Color.fromARGB(255, 157, 191, 207),
-                ),
-              ),
-            );
+          // If organizer, show sections for both created and joined events
+          if (widget.isOrganizer!) {
+            return _buildOrganizerSections(joinedEventIds, userId);
+          } else {
+            // For regular users, only show joined events
+            return _buildUserEvents(joinedEventIds);
           }
-
-          return StreamBuilder<QuerySnapshot>(
-            stream: FirebaseFirestore.instance
-                .collection('events')
-                .where(FieldPath.documentId, whereIn: joinedEventIds)
-                .snapshots(),
-            builder: (context, eventSnap) {
-              if (eventSnap.connectionState == ConnectionState.waiting) {
-                return const Center(child: CircularProgressIndicator());
-              }
-              if (!eventSnap.hasData || eventSnap.data!.docs.isEmpty) {
-                return const Center(
-                  child: Text(
-                    "No joined events found.",
-                    style: TextStyle(
-                      fontSize: 18,
-                      color: Color.fromARGB(255, 157, 191, 207),
-                    ),
-                  ),
-                );
-              }
-
-              final events = eventSnap.data!.docs;
-
-              return ListView.builder(
-                itemCount: events.length,
-                itemBuilder: (context, index) {
-                  final event = events[index];
-                  final eventData = event.data() as Map<String, dynamic>;
-
-                  return Card(
-                    margin: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 8,
-                    ),
-                    child: ListTile(
-                      title: Text(eventData['name'] ?? 'No title'),
-                      subtitle: Text(eventData['date'] ?? 'No date'),
-                      trailing: const Icon(Icons.arrow_forward),
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => EventDetailScreen(
-                              isOrganizer: widget.isOrganizer,
-                              eventDoc: event,
-                              joinLeaveService: EventActionService(),
-                            ),
-                          ),
-                        );
-                      },
-                    ),
-                  );
-                },
-              );
-            },
-          );
         },
       ),
+    );
+  }
+
+  // For organizers - show sections for created and joined events
+  Widget _buildOrganizerSections(List<String> joinedEventIds, String userId) {
+    return StreamBuilder<QuerySnapshot>(
+      stream: FirebaseFirestore.instance
+          .collection('events')
+          .where('organizerId', isEqualTo: userId)
+          .snapshots(),
+      builder: (context, createdEventsSnap) {
+        if (createdEventsSnap.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
+
+        final createdEvents = createdEventsSnap.hasData
+            ? createdEventsSnap.data!.docs
+            : <QueryDocumentSnapshot>[];
+
+        // Get joined events
+        return StreamBuilder<QuerySnapshot>(
+          stream: joinedEventIds.isNotEmpty
+              ? FirebaseFirestore.instance
+                    .collection('events')
+                    .where(FieldPath.documentId, whereIn: joinedEventIds)
+                    .snapshots()
+              : const Stream.empty(),
+          builder: (context, joinedEventsSnap) {
+            if (joinedEventsSnap.connectionState == ConnectionState.waiting &&
+                joinedEventIds.isNotEmpty) {
+              return const Center(child: CircularProgressIndicator());
+            }
+
+            final joinedEvents = joinedEventsSnap.hasData
+                ? joinedEventsSnap.data!.docs
+                : <QueryDocumentSnapshot>[];
+
+            // Filter out created events from joined events to avoid duplicates
+            final filteredJoinedEvents = joinedEvents
+                .where(
+                  (event) =>
+                      !createdEvents.any((created) => created.id == event.id),
+                )
+                .toList();
+
+            // If no events at all
+            if (createdEvents.isEmpty && filteredJoinedEvents.isEmpty) {
+              return const Center(
+                child: Text(
+                  "You haven't created or joined any events yet.",
+                  style: TextStyle(
+                    fontSize: 18,
+                    color: Color.fromARGB(255, 157, 191, 207),
+                  ),
+                ),
+              );
+            }
+
+            return SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Created Events Section
+                  if (createdEvents.isNotEmpty) ...[
+                    _buildSectionHeader(
+                      'Created Events',
+                      Icons.create,
+                      Colors.green,
+                    ),
+                    _buildEventsList(createdEvents),
+                    const SizedBox(height: 20),
+                  ],
+
+                  // Joined Events Section
+                  if (filteredJoinedEvents.isNotEmpty) ...[
+                    _buildSectionHeader(
+                      'Joined Events',
+                      Icons.event_available,
+                      Colors.blue,
+                    ),
+                    _buildEventsList(filteredJoinedEvents),
+                    const SizedBox(height: 20),
+                  ],
+
+                  // Show message if only one type exists
+                  if (createdEvents.isNotEmpty && filteredJoinedEvents.isEmpty)
+                    _buildEmptySection(
+                      'joined',
+                      Icons.event_available,
+                      Colors.blue,
+                    ),
+
+                  if (createdEvents.isEmpty && filteredJoinedEvents.isNotEmpty)
+                    _buildEmptySection('created', Icons.create, Colors.green),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  // Build section header
+  Widget _buildSectionHeader(String title, IconData icon, Color color) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+      child: Row(
+        children: [
+          Icon(icon, color: color, size: 24),
+          const SizedBox(width: 8),
+          Text(
+            title,
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              color: color,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Build empty section message
+  Widget _buildEmptySection(String type, IconData icon, Color color) {
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          // ignore: deprecated_member_use
+          color: color.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(12),
+          // ignore: deprecated_member_use
+          border: Border.all(color: color.withOpacity(0.3)),
+        ),
+        child: Column(
+          children: [
+            // ignore: deprecated_member_use
+            Icon(icon, color: color.withOpacity(0.6), size: 48),
+            const SizedBox(height: 8),
+            Text(
+              type == 'created'
+                  ? "You haven't created any events yet."
+                  : "You haven't joined any events yet.",
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 16,
+                // ignore: deprecated_member_use
+                color: color.withOpacity(0.8),
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // For regular users - only show joined events
+  Widget _buildUserEvents(List<String> joinedEventIds) {
+    if (joinedEventIds.isEmpty) {
+      return const Center(
+        child: Text(
+          "You haven't joined any events yet.",
+          style: TextStyle(
+            fontSize: 18,
+            color: Color.fromARGB(255, 157, 191, 207),
+          ),
+        ),
+      );
+    }
+
+    return StreamBuilder<QuerySnapshot>(
+      stream: FirebaseFirestore.instance
+          .collection('events')
+          .where(FieldPath.documentId, whereIn: joinedEventIds)
+          .snapshots(),
+      builder: (context, eventSnap) {
+        if (eventSnap.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        if (!eventSnap.hasData || eventSnap.data!.docs.isEmpty) {
+          return const Center(
+            child: Text(
+              "No joined events found.",
+              style: TextStyle(
+                fontSize: 18,
+                color: Color.fromARGB(255, 157, 191, 207),
+              ),
+            ),
+          );
+        }
+
+        return SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildSectionHeader(
+                'Joined Events',
+                Icons.event_available,
+                Colors.blue,
+              ),
+              _buildEventsList(eventSnap.data!.docs),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  // Simple events list
+  Widget _buildEventsList(List<QueryDocumentSnapshot> events) {
+    return ListView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      itemCount: events.length,
+      itemBuilder: (context, index) {
+        final event = events[index];
+        final eventData = event.data() as Map<String, dynamic>;
+
+        return Card(
+          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+          elevation: 2,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: ListTile(
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 8,
+            ),
+            title: Text(
+              eventData['name'] ?? 'No title',
+              style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
+            ),
+            subtitle: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const SizedBox(height: 4),
+                Row(
+                  children: [
+                    const Icon(
+                      Icons.calendar_today,
+                      size: 14,
+                      color: Colors.grey,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      eventData['date'] ?? 'No date',
+                      style: const TextStyle(fontSize: 14, color: Colors.grey),
+                    ),
+                  ],
+                ),
+                if (eventData['location'] != null) ...[
+                  const SizedBox(height: 2),
+                  Row(
+                    children: [
+                      const Icon(
+                        Icons.location_on,
+                        size: 14,
+                        color: Colors.grey,
+                      ),
+                      const SizedBox(width: 4),
+                      Expanded(
+                        child: Text(
+                          eventData['location'] ?? '',
+                          style: const TextStyle(
+                            fontSize: 14,
+                            color: Colors.grey,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ],
+            ),
+            trailing: Container(
+              decoration: BoxDecoration(
+                // ignore: deprecated_member_use
+                color: const Color.fromARGB(255, 53, 137, 158).withOpacity(0.1),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: const Icon(
+                Icons.arrow_forward_ios,
+                color: Color.fromARGB(255, 53, 137, 158),
+                size: 18,
+              ),
+            ),
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => EventDetailScreen(
+                    isOrganizer: widget.isOrganizer,
+                    eventDoc: event,
+                    joinLeaveService: EventActionService(),
+                  ),
+                ),
+              );
+            },
+          ),
+        );
+      },
     );
   }
 }

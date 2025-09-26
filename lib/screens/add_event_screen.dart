@@ -21,6 +21,7 @@ class _AddEventScreenState extends State<AddEventScreen> {
   final _formKey = GlobalKey<FormState>();
   final TextEditingController _eventNameController = TextEditingController();
   final TextEditingController _eventDateController = TextEditingController();
+  final TextEditingController _eventTimeController = TextEditingController();
   final TextEditingController _eventLocationController =
       TextEditingController();
   final TextEditingController _eventDescriptionController =
@@ -42,6 +43,27 @@ class _AddEventScreenState extends State<AddEventScreen> {
     }
   }
 
+  Future<void> _selectTime() async {
+    final TimeOfDay? picked = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay.now(),
+      builder: (BuildContext context, Widget? child) {
+        return MediaQuery(
+          data: MediaQuery.of(context).copyWith(alwaysUse24HourFormat: false),
+          child: child!,
+        );
+      },
+    );
+
+    if (picked != null) {
+      String formattedTime = picked.format(context);
+      setState(() {
+        _eventTimeController.text = formattedTime;
+      });
+    }
+  }
+
+  // ignore: unused_element
   Future<void> _sendEventNotificationToAll(
     String eventId,
     String eventName,
@@ -111,6 +133,7 @@ class _AddEventScreenState extends State<AddEventScreen> {
     }
   }
 
+  // ignore: unused_element
   Future<void> _sendEventNotificationToUsers(
     String eventId,
     String eventName,
@@ -227,6 +250,7 @@ class _AddEventScreenState extends State<AddEventScreen> {
         imagePath: _pickedImage?.path,
         organizer: widget.organizer,
         organizerId: widget.organizer,
+        time: _eventTimeController.text.trim(),
       );
       String? myToken = await FirebaseMessaging.instance.getToken();
       if (myToken != null) {
@@ -288,6 +312,14 @@ class _AddEventScreenState extends State<AddEventScreen> {
         backgroundColor: const Color.fromARGB(255, 53, 137, 158),
         foregroundColor: Colors.white,
       ),
+
+    
+      // backgroundColor: const Color.fromARGB(
+      //   255,
+      //   143,
+      //   146,
+      //   131,
+      // ), // Changed the background color here
       body: AbsorbPointer(
         absorbing: _saving,
         child: SingleChildScrollView(
@@ -317,7 +349,10 @@ class _AddEventScreenState extends State<AddEventScreen> {
 
                 TextButton.icon(
                   onPressed: _pickImage,
-                  icon: const Icon(Icons.image, color: Colors.blueAccent),
+                  icon: const Icon(
+                    Icons.image,
+                    color: Color.fromARGB(255, 46, 90, 165),
+                  ),
                   label: const Text("Choose Event Image"),
                 ),
 
@@ -339,38 +374,68 @@ class _AddEventScreenState extends State<AddEventScreen> {
                       : null,
                 ),
                 const SizedBox(height: 18),
-                TextFormField(
-                  controller: _eventDateController,
-                  readOnly: true,
-                  decoration:
-                      _inputDecoration(
-                        "Event Date",
-                        hint: "Select event date",
-                      ).copyWith(
-                        prefixIcon: const Icon(Icons.calendar_month),
-                        filled: true,
-                        fillColor: const Color(0xFFF5F5F5),
+
+                Row(
+                  children: [
+                    Expanded(
+                      flex: 3,
+                      child: TextFormField(
+                        controller: _eventDateController,
+                        readOnly: true,
+                        decoration:
+                            _inputDecoration(
+                              "Event Date",
+                              hint: "Select date",
+                            ).copyWith(
+                              prefixIcon: const Icon(Icons.calendar_month),
+                              filled: true,
+                              fillColor: const Color(0xFFF5F5F5),
+                            ),
+                        onTap: () async {
+                          DateTime? pickedDate = await showDatePicker(
+                            context: context,
+                            initialDate: DateTime.now(),
+                            firstDate: DateTime.now(),
+                            lastDate: DateTime(2100),
+                          );
+                          if (pickedDate != null) {
+                            String formattedDate =
+                                "${pickedDate.day.toString().padLeft(2, '0')}/"
+                                "${pickedDate.month.toString().padLeft(2, '0')}/"
+                                "${pickedDate.year}";
+                            setState(() {
+                              _eventDateController.text = formattedDate;
+                            });
+                          }
+                        },
+                        validator: (v) => (v == null || v.trim().isEmpty)
+                            ? "Please select date"
+                            : null,
                       ),
-                  onTap: () async {
-                    DateTime? pickedDate = await showDatePicker(
-                      context: context,
-                      initialDate: DateTime.now(),
-                      firstDate: DateTime.now(),
-                      lastDate: DateTime(2100),
-                    );
-                    if (pickedDate != null) {
-                      String formattedDate =
-                          "${pickedDate.day.toString().padLeft(2, '0')}/"
-                          "${pickedDate.month.toString().padLeft(2, '0')}/"
-                          "${pickedDate.year}";
-                      setState(() {
-                        _eventDateController.text = formattedDate;
-                      });
-                    }
-                  },
-                  validator: (v) => (v == null || v.trim().isEmpty)
-                      ? "Please select event date"
-                      : null,
+                    ),
+                    const SizedBox(width: 12),
+
+                    Expanded(
+                      flex: 2,
+                      child: TextFormField(
+                        controller: _eventTimeController,
+                        readOnly: true,
+                        decoration:
+                            _inputDecoration(
+                              "Time",
+                              hint: "Select time",
+                            ).copyWith(
+                              prefixIcon: const Icon(Icons.access_time),
+                              filled: true,
+                              fillColor: const Color(0xFFF5F5F5),
+                            ),
+                        onTap: _selectTime,
+                        validator: (v) => (v == null || v.trim().isEmpty)
+                            ? "Please select time"
+                            : null,
+                      ),
+                    ),
+                  ],
                 ),
                 const SizedBox(height: 18),
 
@@ -424,11 +489,7 @@ class _AddEventScreenState extends State<AddEventScreen> {
                             ),
                           )
                         : const Icon(Icons.save, size: 22),
-                    label: Text(
-                      _saving
-                          ? "Saving & Sending Notifications..."
-                          : "Save Event",
-                    ),
+                    label: Text(_saving ? "Saving Event" : "Save Event"),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color.fromARGB(255, 53, 137, 158),
                       foregroundColor: Colors.white,
@@ -456,6 +517,7 @@ class _AddEventScreenState extends State<AddEventScreen> {
   void dispose() {
     _eventNameController.dispose();
     _eventDateController.dispose();
+    _eventTimeController.dispose();
     _eventLocationController.dispose();
     _eventDescriptionController.dispose();
     super.dispose();

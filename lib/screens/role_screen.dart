@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:event_buddy/screens/navigation_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
@@ -24,38 +25,122 @@ class RoleSelectionScreen extends StatelessWidget {
 
   Future<void> saveUserData(BuildContext context, String role) async {
     final authService = AuthService();
+    User? user = FirebaseAuth.instance.currentUser;
+
+    debugPrint('=== AUTHENTICATION DEBUG ===');
+    debugPrint('fromGoogle: $fromGoogle');
+    debugPrint('Current user: ${user?.uid}');
+    debugPrint('Email: ${user?.email}');
+    debugPrint('Display Name: ${user?.displayName}');
+    debugPrint('Provided email: $email');
+    debugPrint('Provided password: ${password != null ? 'Present' : 'Null'}');
+
+    if (user == null && !fromGoogle && email != null && password != null) {
+      debugPrint('User not found, attempting registration...');
+
+      try {
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (context) =>
+              const Center(child: CircularProgressIndicator()),
+        );
+
+        UserCredential userCredential = await FirebaseAuth.instance
+            .createUserWithEmailAndPassword(email: email!, password: password!);
+
+        user = userCredential.user;
+
+        Navigator.pop(context);
+
+        debugPrint('Registration successful: ${user?.uid}');
+      } catch (e) {
+        Navigator.pop(context);
+
+        debugPrint('Registration failed: $e');
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text("Registration failed: $e"),
+            backgroundColor: Colors.red,
+          ),
+        );
+        return;
+      }
+    }
+
+    if (user == null) {
+      debugPrint('User still null after registration attempt');
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("Authentication failed. Please try again."),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
 
     try {
-      User? user;
+      final Map<String, dynamic> userData = {
+        "firstName": firstName ?? "",
+        "lastName": lastName ?? "",
+        "email": user.email ?? email ?? "",
+        "dob": dob ?? "",
+        "role": role,
+        "fcmToken": await authService.messaging.getToken().catchError((e) {
+          debugPrint('FCM Token error: $e');
+          return null;
+        }),
+        "isActive": true,
+        "createdAt": FieldValue.serverTimestamp(),
+      };
 
-      if (fromGoogle) {
-        user = FirebaseAuth.instance.currentUser;
+      debugPrint('=== SAVING USER DATA ===');
+      debugPrint('Selected Role: $role');
+      debugPrint('User ID: ${user.uid}');
+      debugPrint('User Data: $userData');
+
+      if (role.toLowerCase() == "organizer") {
+        debugPrint('Saving to organizers collection');
+        await authService.firestore
+            .collection("organizers")
+            .doc(user.uid)
+            .set(userData);
       } else {
-        user = await authService.registerUser(
-          email: email!,
-          password: password!,
-          firstName: firstName ?? "",
-          lastName: lastName ?? "",
-          dob: dob ?? "",
-          role: role,
-        );
+        debugPrint('Saving to users collection');
+        await authService.firestore
+            .collection("users")
+            .doc(user.uid)
+            .set(userData);
       }
-
-      if (user == null) throw Exception("User not found");
 
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
-          builder: (context) => NavigationScreen(
-            userName: firstName ?? user?.displayName ?? "",
-            isOrganizer: true,
+          builder: (_) => NavigationScreen(
+            userName:
+                firstName ??
+                user?.displayName ??
+                user?.email?.split('@')[0] ??
+                "User",
+            isOrganizer: role.toLowerCase() == "organizer",
           ),
         ),
       );
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text("Successfully registered as ${role.toLowerCase()}!"),
+          backgroundColor: Colors.green,
+        ),
+      );
     } catch (e) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text("Error: $e")));
+      debugPrint('Error saving user data: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text("Error saving user data: $e"),
+          backgroundColor: Colors.red,
+        ),
+      );
     }
   }
 
@@ -81,6 +166,7 @@ class RoleSelectionScreen extends StatelessWidget {
               style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 40),
+
             SizedBox(
               width: double.infinity,
               height: 50,
@@ -93,10 +179,15 @@ class RoleSelectionScreen extends StatelessWidget {
                   ),
                 ),
                 onPressed: () => saveUserData(context, "User"),
-                child: const Text("User"),
+                child: const Text(
+                  "User",
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                ),
               ),
             ),
+
             const SizedBox(height: 16),
+
             SizedBox(
               width: double.infinity,
               height: 50,
@@ -109,8 +200,19 @@ class RoleSelectionScreen extends StatelessWidget {
                   ),
                 ),
                 onPressed: () => saveUserData(context, "Organizer"),
-                child: const Text("Organizer"),
+                child: const Text(
+                  "Organizer",
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                ),
               ),
+            ),
+
+            const SizedBox(height: 20),
+
+            const Text(
+              "Users can join events\n Organizers can create and manage events",
+              style: TextStyle(fontSize: 14, color: Colors.grey, height: 1.5),
+              textAlign: TextAlign.center,
             ),
           ],
         ),

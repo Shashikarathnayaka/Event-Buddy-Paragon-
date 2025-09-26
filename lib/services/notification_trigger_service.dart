@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:googleapis_auth/auth_io.dart';
 
@@ -46,7 +47,9 @@ Future<void> sendToToken({
     body: jsonEncode(message),
   );
 
-  print("Single token response: ${response.statusCode} -> ${response.body}");
+  debugPrint(
+    "Single token response: ${response.statusCode} -> ${response.body}",
+  );
   client.close();
 }
 
@@ -80,7 +83,7 @@ Future<void> sendToTopic({
     body: jsonEncode(message),
   );
 
-  print("Topic response: ${response.statusCode} -> ${response.body}");
+  debugPrint("Topic response: ${response.statusCode} -> ${response.body}");
   client.close();
 }
 
@@ -115,7 +118,9 @@ Future<void> sendToTokenList({
       body: jsonEncode(message),
     );
 
-    print("Token $token response: ${response.statusCode} -> ${response.body}");
+    debugPrint(
+      "Token $token response: ${response.statusCode} -> ${response.body}",
+    );
   }
 
   client.close();

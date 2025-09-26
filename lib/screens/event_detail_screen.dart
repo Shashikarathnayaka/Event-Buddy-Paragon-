@@ -29,18 +29,64 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
 
   bool _isEventCreator(Map<String, dynamic> eventData) {
     final currentUserId = _auth.currentUser?.uid;
-    final eventOrganizerId = eventData['organizer'];
 
-    return currentUserId != null &&
-        eventOrganizerId != null &&
-        currentUserId == eventOrganizerId;
+    final eventOrganizerId =
+        eventData['organizer'] ??
+        eventData['organizerId'] ??
+        eventData['createdBy'] ??
+        eventData['userId'] ??
+        eventData['creator'];
+
+    // debugPrint('=== EVENT CREATOR CHECK ===');
+    debugPrint('Current User ID: $currentUserId');
+    debugPrint('Event Organizer ID: $eventOrganizerId');
+    debugPrint('All event data keys: ${eventData.keys.toList()}');
+    debugPrint('Are they equal? ${currentUserId == eventOrganizerId}');
+    debugPrint('Current user null? ${currentUserId == null}');
+    debugPrint('Organizer null? ${eventOrganizerId == null}');
+
+    if (currentUserId == null || eventOrganizerId == null) {
+      return false;
+    }
+
+    return currentUserId.toString() == eventOrganizerId.toString();
   }
 
   Future<DocumentSnapshot?> _getOrganizer(String? organizerId) async {
+    debugPrint('=== GET ORGANIZER DEBUG ===');
+    debugPrint('Organizer ID received: $organizerId');
+
     if (organizerId == null || organizerId.isEmpty) {
+      debugPrint('Organizer ID is null or empty');
       return null;
     }
-    return await _firestore.collection('organizers').doc(organizerId).get();
+
+    try {
+      var doc = await _firestore
+          .collection('organizers')
+          .doc(organizerId)
+          .get();
+      debugPrint('Organizers collection doc exists: ${doc.exists}');
+
+      if (doc.exists) {
+        debugPrint('Organizer data from organizers collection: ${doc.data()}');
+        return doc;
+      }
+
+      doc = await _firestore.collection('users').doc(organizerId).get();
+      debugPrint('Users collection doc exists: ${doc.exists}');
+
+      if (doc.exists) {
+        debugPrint('Organizer data from users collection: ${doc.data()}');
+        return doc;
+      }
+
+      debugPrint('Organizer not found in any collection');
+      return null;
+    } catch (e) {
+      debugPrint('Error getting organizer: $e');
+      return null;
+    }
   }
 
   Widget _imageFromBase64(String base64String) {
@@ -101,12 +147,81 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
     return {'url': null, 'base64': null};
   }
 
+  void _showFullScreenImage(BuildContext context, String? url, String? base64) {
+    showDialog(
+      context: context,
+      barrierDismissible: true,
+      barrierColor: Colors.black87,
+      builder: (BuildContext context) {
+        return Dialog(
+          backgroundColor: Colors.transparent,
+          insetPadding: EdgeInsets.zero,
+          child: Container(
+            width: double.infinity,
+            height: double.infinity,
+            color: Colors.black87,
+            child: Stack(
+              children: [
+                Center(
+                  child: InteractiveViewer(
+                    child: _buildFullScreenImage(url, base64),
+                  ),
+                ),
+                Positioned(
+                  top: 40,
+                  right: 20,
+                  child: IconButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    icon: const Icon(
+                      Icons.close,
+                      color: Colors.white,
+                      size: 30,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildFullScreenImage(String? url, String? base64) {
+    if (url != null && url.isNotEmpty) {
+      return Image.network(
+        url,
+        fit: BoxFit.contain,
+        errorBuilder: (context, error, stackTrace) =>
+            Image.asset('assets/images/event_banner.jpg', fit: BoxFit.contain),
+      );
+    } else if (base64 != null && base64.isNotEmpty) {
+      try {
+        String cleanBase64 = base64;
+        if (base64.contains(',')) {
+          cleanBase64 = base64.split(',').last;
+        }
+        Uint8List bytes = base64Decode(cleanBase64);
+        return Image.memory(bytes, fit: BoxFit.contain);
+      } catch (e) {
+        return const Icon(Icons.broken_image, size: 80, color: Colors.white);
+      }
+    } else {
+      return Image.asset('assets/images/event_banner.jpg', fit: BoxFit.contain);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final data = (widget.eventDoc.data() as Map<String, dynamic>?) ?? {};
     final eventId = widget.eventDoc.id;
     final userId = _auth.currentUser?.uid;
     final isCreator = _isEventCreator(data);
+
+    debugPrint('widget.isOrganizer: ${widget.isOrganizer}');
+    debugPrint('isCreator: $isCreator');
+    debugPrint('userId: $userId');
+    debugPrint('eventId: $eventId');
 
     return Scaffold(
       appBar: AppBar(
@@ -121,7 +236,11 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
         ),
         iconTheme: const IconThemeData(color: Colors.white),
         backgroundColor: const Color.fromARGB(255, 53, 137, 158),
-        actions: widget.isOrganizer == true && isCreator
+        actions:
+            (widget.isOrganizer == true) &&
+                (isCreator ||
+                    data['organizer'] == null ||
+                    data['organizer'] == '')
             ? [
                 IconButton(
                   icon: const Icon(Icons.edit, color: Colors.white),
@@ -146,7 +265,6 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
                     }
                   },
                 ),
-
                 IconButton(
                   icon: const Icon(Icons.delete, color: Colors.white),
                   onPressed: () async {
@@ -210,7 +328,6 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
               ]
             : null,
       ),
-
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -230,36 +347,39 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
                 final url = info['url'];
                 final base64 = info['base64'];
 
+                Widget imageWidget;
+
                 if (url != null && url.isNotEmpty) {
-                  return ClipRRect(
-                    borderRadius: BorderRadius.circular(12),
-                    child: Image.network(
-                      url,
-                      height: 220,
-                      width: double.infinity,
-                      fit: BoxFit.cover,
-                      errorBuilder: (c, o, s) => Image.asset(
-                        'assets/images/event_banner.jpg',
-                        height: 220,
-                        fit: BoxFit.cover,
-                      ),
-                    ),
-                  );
-                } else if (base64 != null && base64.isNotEmpty) {
-                  return ClipRRect(
-                    borderRadius: BorderRadius.circular(12),
-                    child: _imageFromBase64(base64),
-                  );
-                } else {
-                  return ClipRRect(
-                    borderRadius: BorderRadius.circular(12),
-                    child: Image.asset(
+                  imageWidget = Image.network(
+                    url,
+                    height: 220,
+                    width: double.infinity,
+                    fit: BoxFit.cover,
+                    errorBuilder: (c, o, s) => Image.asset(
                       'assets/images/event_banner.jpg',
                       height: 220,
                       fit: BoxFit.cover,
                     ),
                   );
+                } else if (base64 != null && base64.isNotEmpty) {
+                  imageWidget = _imageFromBase64(base64);
+                } else {
+                  imageWidget = Image.asset(
+                    'assets/images/event_banner.jpg',
+                    height: 220,
+                    fit: BoxFit.cover,
+                  );
                 }
+
+                return ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: GestureDetector(
+                    onTap: () {
+                      _showFullScreenImage(context, url, base64);
+                    },
+                    child: imageWidget,
+                  ),
+                );
               },
             ),
 
@@ -267,6 +387,15 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
             Text(
               data['name'] ?? 'No title',
               style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 8),
+
+            Row(
+              children: [
+                const Icon(Icons.access_time, size: 16, color: Colors.grey),
+                const SizedBox(width: 8),
+                Text(data['time'] ?? 'No time'),
+              ],
             ),
             const SizedBox(height: 8),
             Row(
@@ -291,16 +420,95 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
             ),
             const SizedBox(height: 20),
             FutureBuilder<DocumentSnapshot?>(
-              future: _getOrganizer(data['organizer']),
+              future: _getOrganizer(
+                data['organizer'] ??
+                    data['organizerId'] ??
+                    data['createdBy'] ??
+                    data['userId'] ??
+                    data['creator'],
+              ),
               builder: (context, snapshot) {
+                debugPrint('=== ORGANIZER WIDGET DEBUG ===');
+                debugPrint('Connection state: ${snapshot.connectionState}');
+                debugPrint('Has data: ${snapshot.hasData}');
+                debugPrint('Snapshot data exists: ${snapshot.data?.exists}');
+
                 if (snapshot.connectionState == ConnectionState.waiting) {
                   return const CircularProgressIndicator();
                 }
+
                 if (!snapshot.hasData || snapshot.data == null) {
-                  return const Text("Organizer details not available");
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        "Organizer: you are the creator this event",
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      Text("Organizer ID: ${data['organizer'] ?? 'Not found'}"),
+                      if (isCreator)
+                        Container(
+                          margin: const EdgeInsets.only(top: 8),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 6,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.blue.shade50,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: Colors.blue.shade200),
+                          ),
+                          child: const Text(
+                            "You are the creator of this event",
+                            style: TextStyle(
+                              color: Colors.blue,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ),
+                    ],
+                  );
                 }
+
                 if (!snapshot.data!.exists) {
-                  return const Text("Organizer not found");
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        "Organizer: Not found in database",
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      Text("Organizer ID: ${data['organizer'] ?? 'Not found'}"),
+                      if (isCreator)
+                        Container(
+                          margin: const EdgeInsets.only(top: 8),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 6,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.blue.shade50,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: Colors.blue.shade200),
+                          ),
+                          child: const Text(
+                            "You are the creator of this event",
+                            style: TextStyle(
+                              color: Colors.blue,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ),
+                    ],
+                  );
                 }
 
                 final organizerData =
@@ -308,13 +516,19 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
 
                 final firstName = organizerData['firstName'] ?? '';
                 final lastName = organizerData['lastName'] ?? '';
+                final name = organizerData['name'] ?? '';
                 final email = organizerData['email'] ?? '-';
+
+                final displayName =
+                    (firstName.isNotEmpty || lastName.isNotEmpty)
+                    ? "$firstName $lastName".trim()
+                    : (name.isNotEmpty ? name : 'Unknown');
 
                 return Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      "Organizer: ${firstName.isNotEmpty || lastName.isNotEmpty ? "$firstName $lastName" : '-'}",
+                      "Organizer: $displayName",
                       style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
@@ -353,7 +567,6 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
           ],
         ),
       ),
-
       bottomNavigationBar: userId == null
           ? const SizedBox.shrink()
           : StreamBuilder<DocumentSnapshot>(

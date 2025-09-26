@@ -1,5 +1,6 @@
 import 'dart:developer';
 import 'package:event_buddy/firebase_options.dart';
+import 'package:event_buddy/screens/splash_screen.dart';
 import 'package:event_buddy/wrapper/wrapper.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
@@ -10,7 +11,7 @@ import 'services/push_notification_service.dart';
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
-  log("📩 Background message received: ${message.messageId}");
+  log(" Background message received: ${message.messageId}");
   log("Message data: ${message.data}");
   if (message.notification != null) {
     log(
@@ -43,7 +44,17 @@ class MyApp extends StatelessWidget {
         title: 'Event Buddy',
         theme: ThemeData(primarySwatch: Colors.blue),
         home: const AuthGate(body: Center(child: Text("Firebase Connected "))),
+
+        routes: {
+          '/splash': (context) => const SplashScreen(),
+          '/auth': (context) =>
+              const AuthGate(body: Center(child: Text("Firebase Connected"))),
+        },
       ),
     );
   }
 }
+
+
+//developed by Paragon Software Group sense in 2025
+//www.paragon-softwaregroup.com

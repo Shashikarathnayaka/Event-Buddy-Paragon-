@@ -1,14 +1,19 @@
 import 'dart:developer';
-
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:event_buddy/screens/navigation_screen.dart';
+import 'package:event_buddy/screens/role_screen.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter/material.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 
 class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseMessaging _messaging = FirebaseMessaging.instance;
+
+  FirebaseFirestore get firestore => _firestore;
+  FirebaseMessaging get messaging => _messaging;
 
   Future<User?> registerUser({
     required String email,
@@ -106,38 +111,36 @@ class AuthService {
     }
   }
 
-  /// Google Sign-In with FCM token
-  Future<User?> signInWithGoogle() async {
+  // google sign in start
+
+  Future<void> signInWithGoogle(BuildContext context) async {
     try {
       final googleSignIn = GoogleSignIn.instance;
       await googleSignIn.initialize();
 
       final googleUser = await googleSignIn.authenticate();
-
       final googleAuth = googleUser.authentication;
+
       final credential = GoogleAuthProvider.credential(
         idToken: googleAuth.idToken,
+        accessToken: googleAuth.idToken,
       );
 
-      final firebaseResponse = await FirebaseAuth.instance.signInWithCredential(
-        credential,
-      );
-
+      final firebaseResponse = await _auth.signInWithCredential(credential);
       final user = firebaseResponse.user;
 
-      if (user != null) {
-        await updateUserFCMToken(user.uid);
-      }
+      if (user == null) throw Exception("User not found");
 
-      return user;
+      await saveUserFromGoogle(user, context);
     } on FirebaseAuthException catch (e) {
-      throw Exception(e.message ?? "Google Sign-In failed");
+      throw Exception(e.message ?? "Firebase Auth Error");
     } on GoogleSignInException catch (e) {
       throw Exception('Google Sign-In error: ${e.code} ${e.description}');
     } catch (e) {
       throw Exception('Unknown error: $e');
     }
   }
+  // google sign in end
 
   Future<void> updateUserFCMToken(String uid) async {
     try {
@@ -317,6 +320,7 @@ class AuthService {
       'name': eventDoc['name'],
       'date': eventDoc['date'],
       'location': eventDoc['location'],
+      'time': eventDoc['time'],
       'joinedAt': FieldValue.serverTimestamp(),
     });
   }
@@ -328,5 +332,59 @@ class AuthService {
     await userDocRef.collection('myEvents').doc(id).delete();
   }
 
-  Future<void> saveUserFromGoogle(User user) async {}
+  Future<void> saveUserFromGoogle(User user, BuildContext context) async {
+    try {
+      final userDoc = await _firestore.collection('users').doc(user.uid).get();
+      final orgDoc = await _firestore
+          .collection('organizers')
+          .doc(user.uid)
+          .get();
+
+      if (!userDoc.exists && !orgDoc.exists) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (_) => RoleSelectionScreen(
+              firstName: user.displayName?.split(" ").first ?? "",
+              lastName: user.displayName?.split(" ").last ?? "",
+              email: user.email,
+              fromGoogle: true,
+            ),
+          ),
+        );
+      } else {
+        final role = userDoc.exists ? userDoc['role'] : orgDoc['role'];
+        final firstName = userDoc.exists
+            ? userDoc['firstName']
+            : orgDoc['firstName'];
+
+        String? fcmToken = await _messaging.getToken();
+        if (userDoc.exists) {
+          await _firestore.collection('users').doc(user.uid).update({
+            'fcmToken': fcmToken,
+            'lastActive': FieldValue.serverTimestamp(),
+          });
+        } else {
+          await _firestore.collection('organizers').doc(user.uid).update({
+            'fcmToken': fcmToken,
+            'lastActive': FieldValue.serverTimestamp(),
+          });
+        }
+
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (_) => NavigationScreen(
+              userName: firstName,
+              isOrganizer: role == "Organizer",
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text("Error: $e")));
+    }
+  }
 }

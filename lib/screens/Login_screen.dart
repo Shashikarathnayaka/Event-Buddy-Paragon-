@@ -1,9 +1,6 @@
-import 'dart:developer';
-
 import 'package:event_buddy/screens/navigation_screen.dart';
 import 'package:event_buddy/services/auth_service.dart';
 import 'package:event_buddy/screens/register_screen.dart';
-import 'package:event_buddy/screens/role_screen.dart';
 import 'package:event_buddy/utils/core_utils.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
@@ -52,39 +49,23 @@ class _LoginPageState extends State<LoginScreen> {
         context,
       ).showSnackBar(SnackBar(content: Text(e.toString())));
     } finally {
-      _loading = false;
-    }
-  }
-
-  Future<void> _signInWithGoogle() async {
-    setState(() => _loading = true);
-    try {
-      final user = await _authService.signInWithGoogle();
-      setState(() => _loading = false);
-      if (user != null) {
-        // Save user data to Firestore if it's a new Google sign-in
-        await _authService.saveUserFromGoogle(user);
-
-        if (!mounted) return;
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            builder: (context) => RoleSelectionScreen(
-              firstName: user.displayName?.split(" ").first ?? "",
-              lastName: user.displayName?.split(" ").last ?? "",
-              email: user.email,
-              fromGoogle: true,
-            ),
-          ),
-        );
-      }
-    } catch (e) {
-      log(e.toString());
-      CoreUtils.toastError("Google Sign-In failed: $e");
-    } finally {
       setState(() {
         _loading = false;
       });
+    }
+  }
+  Future<void> _signInWithGoogle() async {
+    if (!mounted) return;
+    setState(() => _loading = true);
+
+    try {
+      await _authService.signInWithGoogle(context);
+    } catch (e) {
+      CoreUtils.toastError("Google Sign-In failed: $e");
+    } finally {
+      // ignore: control_flow_in_finally
+      if (!mounted) return;
+      setState(() => _loading = false);
     }
   }
 

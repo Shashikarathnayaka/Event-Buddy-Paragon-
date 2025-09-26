@@ -40,12 +40,12 @@ class PushNotificationService {
             criticalAlert: false,
           );
 
-      print('User granted permission: ${settings.authorizationStatus}');
+      debugPrint('User granted permission: ${settings.authorizationStatus}');
 
       await _initializeLocalNotifications();
 
       String? token = await _firebaseMessaging.getToken();
-      print("FCM Token: $token");
+      debugPrint("FCM Token: $token");
       await _saveTokenToFirestore(token);
 
       FirebaseMessaging.onBackgroundMessage(
@@ -148,7 +148,6 @@ class PushNotificationService {
       if (userDoc.exists) {
         await _firestore.collection('users').doc(userId).update({
           'fcmToken': token,
-          'lastTokenUpdate': FieldValue.serverTimestamp(),
         });
         return;
       }
@@ -160,12 +159,10 @@ class PushNotificationService {
       if (orgDoc.exists) {
         await _firestore.collection('organizers').doc(userId).update({
           'fcmToken': token,
-          'lastTokenUpdate': FieldValue.serverTimestamp(),
         });
       } else {
         await _firestore.collection('users').doc(userId).set({
           'fcmToken': token,
-          'lastTokenUpdate': FieldValue.serverTimestamp(),
           'createdAt': FieldValue.serverTimestamp(),
         }, SetOptions(merge: true));
       }
@@ -222,6 +219,7 @@ class PushNotificationService {
     if (_context == null) return;
 
     final type = message.data['type'];
+    // ignore: unused_local_variable
     String title = message.notification?.title ?? 'New notification';
     String body = message.notification?.body ?? '';
 
@@ -255,7 +253,7 @@ class PushNotificationService {
   }
 
   static void _handleMessageOpenedApp(RemoteMessage message) {
-    print("Message clicked: ${message.messageId}");
+    log("Message clicked: ${message.messageId}");
     _handleNotificationNavigation(message.data);
   }
 
@@ -265,7 +263,7 @@ class PushNotificationService {
     final type = data['type'];
     final eventId = data['eventId'];
 
-    print("Handling navigation for type: $type, eventId: $eventId");
+    log("Handling navigation for type: $type, eventId: $eventId");
 
     switch (type) {
       case 'event_created':
@@ -313,14 +311,14 @@ class PushNotificationService {
       final tokens = await _getAllUserTokensExcept(organizerId);
 
       if (tokens.isEmpty) {
-        print("No tokens found for notification");
+        debugPrint("No tokens found for notification");
         return;
       }
 
-      print("Would send notification to ${tokens.length} users:");
-      print("Event: $eventName (ID: $eventId)");
-      print("Location: $eventLocation");
-      print("Date: $eventDate");
+      debugPrint("Would send notification to ${tokens.length} users:");
+      debugPrint("Event: $eventName (ID: $eventId)");
+      debugPrint("Location: $eventLocation");
+      debugPrint("Date: $eventDate");
 
       if (_context != null) {
         ScaffoldMessenger.of(_context!).showSnackBar(

@@ -1,7 +1,7 @@
 import 'dart:convert';
+import 'dart:developer';
 import 'dart:io';
 import 'dart:typed_data';
-
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:event_buddy/screens/Login_screen.dart';
 import 'package:event_buddy/services/auth_service.dart';
@@ -30,6 +30,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   bool _isLoading = false;
   bool _isEditing = false;
   bool _isProcessingImage = false;
+  bool _isDeletingProfile = false;
 
   String? _profileImageBase64;
   File? _selectedImageFile;
@@ -90,7 +91,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           try {
             _imageBytes = base64Decode(_profileImageBase64!);
           } catch (e) {
-            print('Error decoding base64 image: $e');
+            log('Error decoding base64 image: $e');
             _profileImageBase64 = null;
             _imageBytes = null;
           }
@@ -202,6 +203,135 @@ class _ProfileScreenState extends State<ProfileScreen> {
         ),
       ),
     );
+  }
+
+  Future<void> _deleteProfile() async {
+    final bool? confirmDelete = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(15),
+          ),
+          title: Row(
+            children: [
+              Icon(Icons.warning, color: Colors.red.shade600, size: 28),
+              const SizedBox(width: 10),
+              const Text(
+                'Delete Profile',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: Colors.red,
+                ),
+              ),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Are you sure you want to delete your profile?',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+              ),
+              const SizedBox(height: 10),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.red.shade50,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.red.shade200),
+                ),
+                child: const Text(
+                  '⚠️ This action cannot be undone!\n\n• Your profile data will be permanently deleted\n• You will be logged out immediately\n• All your information will be removed from the database',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Colors.red,
+                    height: 1.4,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text(
+                'Cancel',
+                style: TextStyle(
+                  color: Colors.grey,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(context, true),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+              child: const Text(
+                'Delete Profile',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (confirmDelete == true) {
+      setState(() => _isDeletingProfile = true);
+
+      try {
+        final currentUser = _authService.currentUser;
+        if (currentUser == null) {
+          _showSnackBar('No user logged in', Colors.red);
+          return;
+        }
+
+        final userDoc = await _firestore
+            .collection('users')
+            .doc(currentUser.uid)
+            .get();
+
+        if (userDoc.exists) {
+          await _firestore.collection('users').doc(currentUser.uid).delete();
+        } else {
+          final orgDoc = await _firestore
+              .collection('organizers')
+              .doc(currentUser.uid)
+              .get();
+          if (orgDoc.exists) {
+            await _firestore
+                .collection('organizers')
+                .doc(currentUser.uid)
+                .delete();
+          }
+        }
+
+        await currentUser.delete();
+
+        _showSnackBar('Profile deleted successfully', Colors.green);
+
+        if (context.mounted) {
+          Navigator.pushAndRemoveUntil(
+            context,
+            MaterialPageRoute(builder: (context) => const LoginScreen()),
+            (route) => false,
+          );
+        }
+      } catch (e) {
+        log('Error deleting profile: $e');
+        _showSnackBar('Error deleting profile: $e', Colors.red);
+      } finally {
+        setState(() => _isDeletingProfile = false);
+      }
+    }
   }
 
   Future<void> _saveProfile() async {
@@ -391,7 +521,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ),
           const SizedBox(height: 30),
 
-          // First + Last Name Row
           Row(
             children: [
               Expanded(
@@ -440,7 +569,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
           const SizedBox(height: 16),
 
-          // Email (disabled field)
           TextFormField(
             controller: _emailController,
             enabled: false,
@@ -451,13 +579,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
             decoration: inputDecoration.copyWith(
               labelText: 'Email',
               prefixIcon: const Icon(Icons.email_outlined, color: Colors.teal),
-              fillColor: Colors.grey.shade200, // Disabled eka light grey
+              fillColor: Colors.grey.shade200,
             ),
           ),
 
           const SizedBox(height: 16),
 
-          // Phone
           TextFormField(
             controller: _phoneController,
             enabled: _isEditing,
@@ -474,7 +601,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
           const SizedBox(height: 16),
 
-          // Bio
           TextFormField(
             controller: _bioController,
             enabled: _isEditing,
@@ -525,6 +651,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
           onSelected: (value) {
             if (value == 'edit') {
               setState(() => _isEditing = true);
+            } else if (value == 'delete') {
+              _deleteProfile();
             }
           },
           itemBuilder: (BuildContext context) => [
@@ -537,6 +665,20 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   style: TextStyle(
                     fontWeight: FontWeight.w500,
                     color: Colors.black87,
+                  ),
+                ),
+                contentPadding: EdgeInsets.zero,
+              ),
+            ),
+            PopupMenuItem<String>(
+              value: 'delete',
+              child: ListTile(
+                leading: Icon(Icons.delete_forever, color: Colors.red),
+                title: const Text(
+                  'Delete Profile',
+                  style: TextStyle(
+                    fontWeight: FontWeight.w500,
+                    color: Colors.red,
                   ),
                 ),
                 contentPadding: EdgeInsets.zero,
@@ -584,6 +726,32 @@ class _ProfileScreenState extends State<ProfileScreen> {
       ),
       body: _isLoading && !_isEditing
           ? const Center(child: CircularProgressIndicator())
+          : _isDeletingProfile
+          ? Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const CircularProgressIndicator(
+                    color: Colors.red,
+                    strokeWidth: 3,
+                  ),
+                  const SizedBox(height: 20),
+                  Text(
+                    'Deleting Profile...',
+                    style: TextStyle(
+                      fontSize: 16,
+                      color: Colors.red.shade700,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  const Text(
+                    'Please wait while we delete your account',
+                    style: TextStyle(fontSize: 14, color: Colors.grey),
+                  ),
+                ],
+              ),
+            )
           : Column(
               children: [
                 Expanded(
