@@ -60,11 +60,9 @@ class _MyEventsContentState extends State<MyEventsContent> {
             userData['joinedEvents'] ?? [],
           );
 
-          // If organizer, show sections for both created and joined events
           if (widget.isOrganizer!) {
             return _buildOrganizerSections(joinedEventIds, userId);
           } else {
-            // For regular users, only show joined events
             return _buildUserEvents(joinedEventIds);
           }
         },
@@ -72,7 +70,6 @@ class _MyEventsContentState extends State<MyEventsContent> {
     );
   }
 
-  // For organizers - show sections for created and joined events
   Widget _buildOrganizerSections(List<String> joinedEventIds, String userId) {
     return StreamBuilder<QuerySnapshot>(
       stream: FirebaseFirestore.instance
@@ -88,7 +85,6 @@ class _MyEventsContentState extends State<MyEventsContent> {
             ? createdEventsSnap.data!.docs
             : <QueryDocumentSnapshot>[];
 
-        // Get joined events
         return StreamBuilder<QuerySnapshot>(
           stream: joinedEventIds.isNotEmpty
               ? FirebaseFirestore.instance
@@ -106,7 +102,6 @@ class _MyEventsContentState extends State<MyEventsContent> {
                 ? joinedEventsSnap.data!.docs
                 : <QueryDocumentSnapshot>[];
 
-            // Filter out created events from joined events to avoid duplicates
             final filteredJoinedEvents = joinedEvents
                 .where(
                   (event) =>
@@ -114,7 +109,6 @@ class _MyEventsContentState extends State<MyEventsContent> {
                 )
                 .toList();
 
-            // If no events at all
             if (createdEvents.isEmpty && filteredJoinedEvents.isEmpty) {
               return const Center(
                 child: Text(
@@ -131,7 +125,6 @@ class _MyEventsContentState extends State<MyEventsContent> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Created Events Section
                   if (createdEvents.isNotEmpty) ...[
                     _buildSectionHeader(
                       'Created Events',
@@ -142,7 +135,6 @@ class _MyEventsContentState extends State<MyEventsContent> {
                     const SizedBox(height: 20),
                   ],
 
-                  // Joined Events Section
                   if (filteredJoinedEvents.isNotEmpty) ...[
                     _buildSectionHeader(
                       'Joined Events',
@@ -153,7 +145,6 @@ class _MyEventsContentState extends State<MyEventsContent> {
                     const SizedBox(height: 20),
                   ],
 
-                  // Show message if only one type exists
                   if (createdEvents.isNotEmpty && filteredJoinedEvents.isEmpty)
                     _buildEmptySection(
                       'joined',
@@ -172,7 +163,6 @@ class _MyEventsContentState extends State<MyEventsContent> {
     );
   }
 
-  // Build section header
   Widget _buildSectionHeader(String title, IconData icon, Color color) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
@@ -193,7 +183,6 @@ class _MyEventsContentState extends State<MyEventsContent> {
     );
   }
 
-  // Build empty section message
   Widget _buildEmptySection(String type, IconData icon, Color color) {
     return Padding(
       padding: const EdgeInsets.all(16),
@@ -230,7 +219,6 @@ class _MyEventsContentState extends State<MyEventsContent> {
     );
   }
 
-  // For regular users - only show joined events
   Widget _buildUserEvents(List<String> joinedEventIds) {
     if (joinedEventIds.isEmpty) {
       return const Center(
@@ -282,7 +270,6 @@ class _MyEventsContentState extends State<MyEventsContent> {
     );
   }
 
-  // Simple events list
   Widget _buildEventsList(List<QueryDocumentSnapshot> events) {
     return ListView.builder(
       shrinkWrap: true,
