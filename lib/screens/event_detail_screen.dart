@@ -37,7 +37,6 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
         eventData['userId'] ??
         eventData['creator'];
 
-    // debugPrint('=== EVENT CREATOR CHECK ===');
     debugPrint('Current User ID: $currentUserId');
     debugPrint('Event Organizer ID: $eventOrganizerId');
     debugPrint('All event data keys: ${eventData.keys.toList()}');

@@ -45,24 +45,43 @@ class _HomeScreenState extends State<NavigationScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: _pages[_selectedPageIndex],
-      bottomNavigationBar: BottomNavigationBar(
-        items: const <BottomNavigationBarItem>[
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home_outlined),
-            label: 'Home',
+
+      bottomNavigationBar: ClipRRect(
+        borderRadius: const BorderRadius.only(
+          topLeft: Radius.circular(25.0), 
+          topRight: Radius.circular(25.0), 
+        ),
+        child: BottomNavigationBar(
+          backgroundColor: const Color.fromRGBO(102, 126, 234, 1.0),
+          selectedItemColor: Colors.white,
+          unselectedItemColor: Colors.white.withOpacity(0.6),
+          selectedLabelStyle: const TextStyle(
+            fontWeight: FontWeight.w600,
+            fontSize: 12,
           ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.event_note_outlined),
-            label: 'My Events',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.person_outline),
-            label: 'Profile',
-          ),
-        ],
-        currentIndex: _selectedPageIndex,
-        selectedItemColor: Color.fromARGB(255, 53, 137, 158),
-        onTap: _onItemTapped,
+          unselectedLabelStyle: const TextStyle(fontSize: 11),
+          type: BottomNavigationBarType.fixed,
+          elevation: 0,
+          items: const <BottomNavigationBarItem>[
+            BottomNavigationBarItem(
+              icon: Icon(Icons.home_outlined),
+              activeIcon: Icon(Icons.home),
+              label: 'Home',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.event_note_outlined),
+              activeIcon: Icon(Icons.event_note),
+              label: 'My Events',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.person_outline),
+              activeIcon: Icon(Icons.person),
+              label: 'Profile',
+            ),
+          ],
+          currentIndex: _selectedPageIndex,
+          onTap: _onItemTapped,
+        ),
       ),
     );
   }
@@ -79,7 +98,7 @@ class CustomSearchDelegate extends SearchDelegate {
     final theme = Theme.of(context);
     return theme.copyWith(
       appBarTheme: const AppBarTheme(
-        backgroundColor: Color.fromARGB(255, 59, 155, 179),
+        backgroundColor: Color.fromRGBO(102, 126, 234, 1.0),
         elevation: 0,
         iconTheme: IconThemeData(color: Colors.white),
       ),
@@ -94,9 +113,13 @@ class CustomSearchDelegate extends SearchDelegate {
           borderSide: BorderSide.none,
         ),
         filled: true,
-        fillColor: const Color.fromARGB(82, 229, 235, 235),
+        // ignore: deprecated_member_use
+        fillColor: Colors.white.withOpacity(0.2),
         contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 6),
         constraints: BoxConstraints(maxWidth: double.infinity, minHeight: 40),
+      ),
+      textTheme: theme.textTheme.copyWith(
+        titleLarge: const TextStyle(color: Colors.white, fontSize: 18),
       ),
     );
   }
@@ -127,7 +150,15 @@ class CustomSearchDelegate extends SearchDelegate {
   @override
   Widget buildResults(BuildContext context) {
     if (query.isEmpty) {
-      return Center(child: Text('Search events...'));
+      return const Center(
+        child: Text(
+          'Search events...',
+          style: TextStyle(
+            fontSize: 16,
+            color: Color.fromRGBO(113, 128, 150, 1.0),
+          ),
+        ),
+      );
     }
     return FutureBuilder<QuerySnapshot>(
       future: _firestore
@@ -137,31 +168,79 @@ class CustomSearchDelegate extends SearchDelegate {
           .get(),
       builder: (context, snapshot) {
         if (!snapshot.hasData) {
-          return Center(child: CircularProgressIndicator());
+          return const Center(
+            child: CircularProgressIndicator(
+              color: Color.fromRGBO(102, 126, 234, 1.0),
+            ),
+          );
         }
 
         var results = snapshot.data!.docs;
-        if (results.isEmpty) return Center(child: Text('No events found.'));
+        if (results.isEmpty) {
+          return const Center(
+            child: Text(
+              'No events found.',
+              style: TextStyle(
+                fontSize: 16,
+                color: Color.fromRGBO(113, 128, 150, 1.0),
+              ),
+            ),
+          );
+        }
 
         return ListView.builder(
+          padding: const EdgeInsets.all(8),
           itemCount: results.length,
           itemBuilder: (context, index) {
             var event = results[index];
-            return ListTile(
-              title: Text(event['name'] ?? 'No Name'),
-              subtitle: Text(event['description'] ?? ''),
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => EventDetailScreen(
-                      isOrganizer: isOrganizer,
-                      eventDoc: event,
-                      joinLeaveService: EventActionService(),
-                    ),
+            var data = event.data() as Map<String, dynamic>;
+
+            return Card(
+              margin: const EdgeInsets.symmetric(vertical: 6, horizontal: 8),
+              elevation: 2,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: ListTile(
+                contentPadding: const EdgeInsets.all(12),
+                leading: Container(
+                  width: 50,
+                  height: 50,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(8),
+                    color: const Color.fromRGBO(102, 126, 234, 0.1),
                   ),
-                );
-              },
+                  child: const Icon(
+                    Icons.event,
+                    color: Color.fromRGBO(102, 126, 234, 1.0),
+                  ),
+                ),
+                title: Text(
+                  data['name'] ?? 'No Name',
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 15,
+                  ),
+                ),
+                subtitle: Text(
+                  data['description'] ?? '',
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(fontSize: 13),
+                ),
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => EventDetailScreen(
+                        isOrganizer: isOrganizer,
+                        eventDoc: event,
+                        joinLeaveService: EventActionService(),
+                      ),
+                    ),
+                  );
+                },
+              ),
             );
           },
         );
@@ -171,6 +250,18 @@ class CustomSearchDelegate extends SearchDelegate {
 
   @override
   Widget buildSuggestions(BuildContext context) {
+    if (query.isEmpty) {
+      return const Center(
+        child: Text(
+          'Type to search events...',
+          style: TextStyle(
+            fontSize: 16,
+            color: Color.fromRGBO(113, 128, 150, 1.0),
+          ),
+        ),
+      );
+    }
+
     return FutureBuilder<QuerySnapshot>(
       future: _firestore
           .collection('events')
@@ -179,33 +270,79 @@ class CustomSearchDelegate extends SearchDelegate {
           .get(),
       builder: (context, snapshot) {
         if (!snapshot.hasData) {
-          return Center(child: CircularProgressIndicator());
+          return const Center(
+            child: CircularProgressIndicator(
+              color: Color.fromRGBO(102, 126, 234, 1.0),
+            ),
+          );
         }
 
         var results = snapshot.data!.docs;
         if (results.isEmpty) {
-          return Center(child: Text('No matching events found.'));
+          return const Center(
+            child: Text(
+              'No matching events found.',
+              style: TextStyle(
+                fontSize: 16,
+                color: Color.fromRGBO(113, 128, 150, 1.0),
+              ),
+            ),
+          );
         }
 
         return ListView.builder(
+          padding: const EdgeInsets.all(8),
           itemCount: results.length,
           itemBuilder: (context, index) {
             var event = results[index];
-            return ListTile(
-              title: Text(event['name'] ?? 'No Name'),
-              subtitle: Text(event['description'] ?? ''),
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => EventDetailScreen(
-                      isOrganizer: isOrganizer,
-                      eventDoc: event,
-                      joinLeaveService: EventActionService(),
-                    ),
+            var data = event.data() as Map<String, dynamic>;
+
+            return Card(
+              margin: const EdgeInsets.symmetric(vertical: 6, horizontal: 8),
+              elevation: 2,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: ListTile(
+                contentPadding: const EdgeInsets.all(12),
+                leading: Container(
+                  width: 50,
+                  height: 50,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(8),
+                    color: const Color.fromRGBO(102, 126, 234, 0.1),
                   ),
-                );
-              },
+                  child: const Icon(
+                    Icons.event,
+                    color: Color.fromRGBO(102, 126, 234, 1.0),
+                  ),
+                ),
+                title: Text(
+                  data['name'] ?? 'No Name',
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 15,
+                  ),
+                ),
+                subtitle: Text(
+                  data['description'] ?? '',
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(fontSize: 13),
+                ),
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => EventDetailScreen(
+                        isOrganizer: isOrganizer,
+                        eventDoc: event,
+                        joinLeaveService: EventActionService(),
+                      ),
+                    ),
+                  );
+                },
+              ),
             );
           },
         );

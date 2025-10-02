@@ -1,10 +1,16 @@
 import 'dart:developer';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/material.dart';
 import 'package:event_buddy/screens/event_detail_screen.dart';
 import 'package:event_buddy/screens/navigation_screen.dart';
 import 'package:event_buddy/services/join_leave_event.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:flutter/material.dart';
+
+const Color _primaryColor = Color.fromRGBO(102, 126, 234, 1.0);
+const Color _accentColor = Color.fromRGBO(118, 75, 162, 1.0);
+const Color _newLightBackground = Color.fromRGBO(240, 244, 248, 1.0);
+const Color _darkTextColor = Color.fromRGBO(113, 128, 150, 1.0);
+const Color _eventGradientStart = Color.fromRGBO(255, 121, 97, 1.0);
 
 class MyEventsContent extends StatefulWidget {
   final bool? isOrganizer;
@@ -20,14 +26,22 @@ class _MyEventsContentState extends State<MyEventsContent> {
     final userId = FirebaseAuth.instance.currentUser!.uid;
 
     return Scaffold(
+      backgroundColor: _newLightBackground,
       appBar: AppBar(
         title: const Text(
           'My Events',
           style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
         ),
         centerTitle: true,
-        backgroundColor: const Color.fromARGB(255, 53, 137, 158),
+        backgroundColor: _primaryColor,
         foregroundColor: Colors.white,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.only(
+            bottomLeft: Radius.circular(25.0),
+            bottomRight: Radius.circular(25.0),
+          ),
+        ),
+        elevation: 4,
         actions: [
           IconButton(
             icon: const Icon(Icons.search),
@@ -47,10 +61,17 @@ class _MyEventsContentState extends State<MyEventsContent> {
             .snapshots(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
+            return Center(
+              child: CircularProgressIndicator(color: _primaryColor),
+            );
           }
           if (!snapshot.hasData || snapshot.data == null) {
-            return const Center(child: Text("No data found."));
+            return Center(
+              child: Text(
+                "No data found.",
+                style: TextStyle(fontSize: 18, color: _darkTextColor),
+              ),
+            );
           }
 
           log(userId);
@@ -78,7 +99,7 @@ class _MyEventsContentState extends State<MyEventsContent> {
           .snapshots(),
       builder: (context, createdEventsSnap) {
         if (createdEventsSnap.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
+          return Center(child: CircularProgressIndicator(color: _primaryColor));
         }
 
         final createdEvents = createdEventsSnap.hasData
@@ -95,7 +116,9 @@ class _MyEventsContentState extends State<MyEventsContent> {
           builder: (context, joinedEventsSnap) {
             if (joinedEventsSnap.connectionState == ConnectionState.waiting &&
                 joinedEventIds.isNotEmpty) {
-              return const Center(child: CircularProgressIndicator());
+              return Center(
+                child: CircularProgressIndicator(color: _primaryColor),
+              );
             }
 
             final joinedEvents = joinedEventsSnap.hasData
@@ -110,13 +133,10 @@ class _MyEventsContentState extends State<MyEventsContent> {
                 .toList();
 
             if (createdEvents.isEmpty && filteredJoinedEvents.isEmpty) {
-              return const Center(
+              return Center(
                 child: Text(
                   "You haven't created or joined any events yet.",
-                  style: TextStyle(
-                    fontSize: 18,
-                    color: Color.fromARGB(255, 157, 191, 207),
-                  ),
+                  style: TextStyle(fontSize: 18, color: _darkTextColor),
                 ),
               );
             }
@@ -129,7 +149,7 @@ class _MyEventsContentState extends State<MyEventsContent> {
                     _buildSectionHeader(
                       'Created Events',
                       Icons.create,
-                      Colors.green,
+                      _primaryColor,
                     ),
                     _buildEventsList(createdEvents),
                     const SizedBox(height: 20),
@@ -139,7 +159,7 @@ class _MyEventsContentState extends State<MyEventsContent> {
                     _buildSectionHeader(
                       'Joined Events',
                       Icons.event_available,
-                      Colors.blue,
+                      _accentColor,
                     ),
                     _buildEventsList(filteredJoinedEvents),
                     const SizedBox(height: 20),
@@ -149,11 +169,11 @@ class _MyEventsContentState extends State<MyEventsContent> {
                     _buildEmptySection(
                       'joined',
                       Icons.event_available,
-                      Colors.blue,
+                      _accentColor,
                     ),
 
                   if (createdEvents.isEmpty && filteredJoinedEvents.isNotEmpty)
-                    _buildEmptySection('created', Icons.create, Colors.green),
+                    _buildEmptySection('created', Icons.create, _primaryColor),
                 ],
               ),
             );
@@ -221,13 +241,10 @@ class _MyEventsContentState extends State<MyEventsContent> {
 
   Widget _buildUserEvents(List<String> joinedEventIds) {
     if (joinedEventIds.isEmpty) {
-      return const Center(
+      return Center(
         child: Text(
           "You haven't joined any events yet.",
-          style: TextStyle(
-            fontSize: 18,
-            color: Color.fromARGB(255, 157, 191, 207),
-          ),
+          style: TextStyle(fontSize: 18, color: _darkTextColor),
         ),
       );
     }
@@ -239,16 +256,13 @@ class _MyEventsContentState extends State<MyEventsContent> {
           .snapshots(),
       builder: (context, eventSnap) {
         if (eventSnap.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
+          return Center(child: CircularProgressIndicator(color: _primaryColor));
         }
         if (!eventSnap.hasData || eventSnap.data!.docs.isEmpty) {
-          return const Center(
+          return Center(
             child: Text(
               "No joined events found.",
-              style: TextStyle(
-                fontSize: 18,
-                color: Color.fromARGB(255, 157, 191, 207),
-              ),
+              style: TextStyle(fontSize: 18, color: _darkTextColor),
             ),
           );
         }
@@ -260,7 +274,7 @@ class _MyEventsContentState extends State<MyEventsContent> {
               _buildSectionHeader(
                 'Joined Events',
                 Icons.event_available,
-                Colors.blue,
+                const Color.fromARGB(255, 33, 128, 184),
               ),
               _buildEventsList(eventSnap.data!.docs),
             ],
@@ -274,93 +288,154 @@ class _MyEventsContentState extends State<MyEventsContent> {
     return ListView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
+      padding: const EdgeInsets.symmetric(horizontal: 12),
       itemCount: events.length,
       itemBuilder: (context, index) {
         final event = events[index];
         final eventData = event.data() as Map<String, dynamic>;
 
-        return Card(
-          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-          elevation: 2,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
+        return Container(
+          margin: const EdgeInsets.only(bottom: 12),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              // ignore: deprecated_member_use
+              colors: [
+                _eventGradientStart,
+                const Color.fromARGB(255, 41, 131, 184).withOpacity(0.9),
+              ],
+            ),
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                // ignore: deprecated_member_use
+                color: _eventGradientStart.withOpacity(0.4),
+                blurRadius: 12,
+                offset: const Offset(0, 6),
+              ),
+            ],
           ),
-          child: ListTile(
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: 16,
-              vertical: 8,
-            ),
-            title: Text(
-              eventData['name'] ?? 'No title',
-              style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
-            ),
-            subtitle: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const SizedBox(height: 4),
-                Row(
-                  children: [
-                    const Icon(
-                      Icons.calendar_today,
-                      size: 14,
-                      color: Colors.grey,
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              // ignore: deprecated_member_use
+              splashColor: Colors.white.withOpacity(0.2),
+              // ignore: deprecated_member_use
+              highlightColor: Colors.white.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(16),
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => EventDetailScreen(
+                      isOrganizer: widget.isOrganizer,
+                      eventDoc: event,
+                      joinLeaveService: EventActionService(),
                     ),
-                    const SizedBox(width: 4),
-                    Text(
-                      eventData['date'] ?? 'No date',
-                      style: const TextStyle(fontSize: 14, color: Colors.grey),
+                  ),
+                );
+              },
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 60,
+                      height: 60,
+                      decoration: BoxDecoration(
+                        // ignore: deprecated_member_use
+                        color: Colors.white.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          // ignore: deprecated_member_use
+                          color: Colors.white.withOpacity(0.3),
+                          width: 2,
+                        ),
+                      ),
+                      child: const Icon(
+                        Icons.event,
+                        color: Colors.white,
+                        size: 30,
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            eventData['name'] ?? 'No title',
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                              color: Colors.white,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          const SizedBox(height: 8),
+                          Row(
+                            children: [
+                              const Icon(
+                                Icons.calendar_today,
+                                size: 14,
+                                color: Colors.white,
+                              ),
+                              const SizedBox(width: 6),
+                              Text(
+                                eventData['date'] ?? 'No date',
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  // ignore: deprecated_member_use
+                                  color: Colors.white.withOpacity(0.9),
+                                ),
+                              ),
+                            ],
+                          ),
+                          if (eventData['location'] != null) ...[
+                            const SizedBox(height: 4),
+                            Row(
+                              children: [
+                                const Icon(
+                                  Icons.location_on,
+                                  size: 14,
+                                  color: Colors.white,
+                                ),
+                                const SizedBox(width: 6),
+                                Expanded(
+                                  child: Text(
+                                    eventData['location'] ?? '',
+                                    style: TextStyle(
+                                      fontSize: 13,
+                                      // ignore: deprecated_member_use
+                                      color: Colors.white.withOpacity(0.9),
+                                    ),
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        // ignore: deprecated_member_use
+                        color: Colors.white.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: const Icon(
+                        Icons.arrow_forward_ios,
+                        color: Colors.white,
+                      ),
                     ),
                   ],
                 ),
-                if (eventData['location'] != null) ...[
-                  const SizedBox(height: 2),
-                  Row(
-                    children: [
-                      const Icon(
-                        Icons.location_on,
-                        size: 14,
-                        color: Colors.grey,
-                      ),
-                      const SizedBox(width: 4),
-                      Expanded(
-                        child: Text(
-                          eventData['location'] ?? '',
-                          style: const TextStyle(
-                            fontSize: 14,
-                            color: Colors.grey,
-                          ),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ],
-            ),
-            trailing: Container(
-              decoration: BoxDecoration(
-                // ignore: deprecated_member_use
-                color: const Color.fromARGB(255, 53, 137, 158).withOpacity(0.1),
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: const Icon(
-                Icons.arrow_forward_ios,
-                color: Color.fromARGB(255, 53, 137, 158),
-                size: 18,
               ),
             ),
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => EventDetailScreen(
-                    isOrganizer: widget.isOrganizer,
-                    eventDoc: event,
-                    joinLeaveService: EventActionService(),
-                  ),
-                ),
-              );
-            },
           ),
         );
       },

@@ -634,8 +634,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
           style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
         ),
         centerTitle: true,
-        backgroundColor: const Color.fromARGB(255, 53, 137, 158),
+        backgroundColor: const Color.fromRGBO(102, 126, 234, 1.0),
         foregroundColor: Colors.white,
+
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.only(
+            bottomLeft: Radius.circular(25.0),
+            bottomRight: Radius.circular(25.0),
+          ),
+        ),
 
         leading: PopupMenuButton<String>(
           icon: const Icon(
