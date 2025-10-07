@@ -1,28 +1,85 @@
 import 'package:event_buddy/screens/navigation_screen.dart';
 import 'package:event_buddy/services/auth_service.dart';
 import 'package:event_buddy/screens/register_screen.dart';
+import 'package:event_buddy/theme/app_colors.dart';
 import 'package:event_buddy/utils/core_utils.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/legacy.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
-class LoginScreen extends StatefulWidget {
+final authServiceProvider = Provider<AuthService>((ref) {
+  return AuthService();
+});
+
+class LoginController extends ChangeNotifier {
+  final AuthService _authService;
+
+  LoginController(this._authService);
+
+  bool _isLoading = false;
+  bool _obscurePassword = true;
+
+  bool get isLoading => _isLoading;
+  bool get obscurePassword => _obscurePassword;
+
+  void togglePasswordVisibility() {
+    _obscurePassword = !_obscurePassword;
+    notifyListeners();
+  }
+
+  Future<Map<String, dynamic>?> loginWithEmail(
+    String email,
+    String password,
+  ) async {
+    _isLoading = true;
+    notifyListeners();
+
+    try {
+      final result = await _authService.loginWithEmail(email, password);
+      return result;
+    } catch (e) {
+      rethrow; 
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> signInWithGoogle(BuildContext context) async {
+    _isLoading = true;
+    notifyListeners();
+
+    try {
+      await _authService.signInWithGoogle(context);
+    } catch (e) {
+      rethrow;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+}
+
+
+
+final loginControllerProvider = ChangeNotifierProvider<LoginController>((ref) {
+  return LoginController(ref.watch(authServiceProvider));
+});
+
+class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
 
   @override
-  State<LoginScreen> createState() => _LoginPageState();
+  ConsumerState<LoginScreen> createState() => _LoginPageState();
 }
 
-class _LoginPageState extends State<LoginScreen> {
+class _LoginPageState extends ConsumerState<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
-  bool _obscurePassword = true;
 
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
-
-  final AuthService _authService = AuthService();
-
-  bool _loading = false;
 
   @override
   void dispose() {
@@ -31,41 +88,35 @@ class _LoginPageState extends State<LoginScreen> {
     super.dispose();
   }
 
+  
   Future<void> _loginUser() async {
     if (!_formKey.currentState!.validate()) return;
 
-    setState(() => _loading = true);
-
     try {
-      final result = await _authService.loginWithEmail(
-        _emailController.text,
-        _passwordController.text,
-      );
+      final result = await ref
+          .read(loginControllerProvider)
+          .loginWithEmail(_emailController.text, _passwordController.text);
+
       if (!mounted) return;
-      _navigateHome(result["role"], result["firstName"]);
+
+      if (result != null) {
+        _navigateHome(result["role"], result["firstName"]);
+      }
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text(e.toString())));
-    } finally {
-      setState(() {
-        _loading = false;
-      });
     }
   }
+
   Future<void> _signInWithGoogle() async {
     if (!mounted) return;
-    setState(() => _loading = true);
 
     try {
-      await _authService.signInWithGoogle(context);
+      await ref.read(loginControllerProvider).signInWithGoogle(context);
     } catch (e) {
       CoreUtils.toastError("Google Sign-In failed: $e");
-    } finally {
-      // ignore: control_flow_in_finally
-      if (!mounted) return;
-      setState(() => _loading = false);
     }
   }
 
@@ -86,7 +137,7 @@ class _LoginPageState extends State<LoginScreen> {
       prefixIcon: Icon(icon),
       hintText: hint,
       filled: true,
-      fillColor: Colors.grey.shade100,
+      fillColor: const Color.fromARGB(255, 12, 12, 12),
       border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
@@ -109,8 +160,10 @@ class _LoginPageState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final controller = ref.watch(loginControllerProvider);
+
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.card,
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 36),
@@ -128,14 +181,22 @@ class _LoginPageState extends State<LoginScreen> {
                 const SizedBox(height: 20),
                 const Text(
                   "Login",
-                  style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
+                  style: TextStyle(
+                    fontSize: 28,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
                 ),
                 const SizedBox(height: 8),
                 const Text(
                   "Please Sign in to continue.",
-                  style: TextStyle(fontSize: 16, color: Colors.grey),
+                  style: TextStyle(
+                    fontSize: 16,
+                    color: Color.fromARGB(255, 206, 200, 200),
+                  ),
                 ),
                 const SizedBox(height: 24),
+
                 TextFormField(
                   controller: _emailController,
                   decoration: _inputDecoration("Email", Icons.person_outline),
@@ -144,20 +205,22 @@ class _LoginPageState extends State<LoginScreen> {
                       : null,
                 ),
                 const SizedBox(height: 16),
+
                 TextFormField(
                   controller: _passwordController,
-                  obscureText: _obscurePassword,
+                  obscureText: controller.obscurePassword, 
                   decoration: _inputDecoration("Password", Icons.lock_outline)
                       .copyWith(
                         suffixIcon: IconButton(
                           icon: Icon(
-                            _obscurePassword
+                            controller
+                                    .obscurePassword 
                                 ? Icons.visibility_off
                                 : Icons.visibility,
                           ),
-                          onPressed: () => setState(
-                            () => _obscurePassword = !_obscurePassword,
-                          ),
+                          onPressed: () {
+                            controller.togglePasswordVisibility();
+                          },
                         ),
                       ),
                   validator: (value) => value == null || value.isEmpty
@@ -165,6 +228,8 @@ class _LoginPageState extends State<LoginScreen> {
                       : null,
                 ),
                 const SizedBox(height: 24),
+
+                
                 ElevatedButton(
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color.fromARGB(255, 53, 137, 158),
@@ -174,16 +239,21 @@ class _LoginPageState extends State<LoginScreen> {
                     ),
                     minimumSize: const Size(double.maxFinite, 48),
                   ),
-                  onPressed: _loginUser,
-                  child: _loading
+                  onPressed: controller.isLoading
+                      ? null
+                      : _loginUser, 
+                  child:
+                      controller
+                          .isLoading 
                       ? const CircularProgressIndicator(color: Colors.white)
                       : const Text("SIGN IN"),
                 ),
                 const SizedBox(height: 16),
+
                 ElevatedButton.icon(
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.white,
-                    foregroundColor: Colors.black,
+                    backgroundColor: const Color.fromARGB(255, 24, 23, 23),
+                    foregroundColor: const Color.fromARGB(255, 240, 238, 238),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(30),
                       side: BorderSide(color: Colors.grey.shade300),
@@ -195,14 +265,19 @@ class _LoginPageState extends State<LoginScreen> {
                     height: 24,
                   ),
                   label: const Text("Sign in with Google"),
-                  onPressed: _signInWithGoogle,
+                  onPressed: controller.isLoading
+                      ? null
+                      : _signInWithGoogle, 
                 ),
                 const SizedBox(height: 16),
+
                 Center(
                   child: RichText(
                     text: TextSpan(
                       text: "Don't have account? ",
-                      style: const TextStyle(color: Colors.grey),
+                      style: const TextStyle(
+                        color: Color.fromARGB(255, 192, 183, 183),
+                      ),
                       children: [
                         TextSpan(
                           text: "Sign Up",

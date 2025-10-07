@@ -3,6 +3,7 @@ import 'dart:developer';
 import 'dart:typed_data';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:event_buddy/services/join_leave_event.dart';
+import 'package:event_buddy/theme/app_colors.dart';
 import 'package:event_buddy/utils/edit_screen.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
@@ -235,7 +236,7 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
           ),
         ),
         iconTheme: const IconThemeData(color: Colors.white),
-        backgroundColor: const Color.fromARGB(255, 53, 137, 158),
+        backgroundColor: AppColors.card,
         actions:
             (widget.isOrganizer == true) &&
                 (isCreator ||

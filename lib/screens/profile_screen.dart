@@ -5,55 +5,50 @@ import 'dart:typed_data';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:event_buddy/screens/Login_screen.dart';
 import 'package:event_buddy/services/auth_service.dart';
+import 'package:event_buddy/theme/app_colors.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/legacy.dart';
 import 'package:image_picker/image_picker.dart';
 
-class ProfileScreen extends StatefulWidget {
-  const ProfileScreen({super.key});
+// Providers
+final authServiceProvider = Provider<AuthService>((ref) => AuthService());
 
-  @override
-  State<ProfileScreen> createState() => _ProfileScreenState();
-}
+final firestoreProvider = Provider<FirebaseFirestore>(
+  (ref) => FirebaseFirestore.instance,
+);
 
-class _ProfileScreenState extends State<ProfileScreen> {
-  final AuthService _authService = AuthService();
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-  final ImagePicker _picker = ImagePicker();
+final imagePickerProvider = Provider<ImagePicker>((ref) => ImagePicker());
 
-  final _formKey = GlobalKey<FormState>();
-  final _firstNameController = TextEditingController();
-  final _lastNameController = TextEditingController();
-  final _emailController = TextEditingController();
-  final _phoneController = TextEditingController();
-  final _bioController = TextEditingController();
+// Profile Screen with simpler approach - using ChangeNotifier
+class ProfileController extends ChangeNotifier {
+  final AuthService _authService;
+  final FirebaseFirestore _firestore;
+  final ImagePicker _picker;
+
+  ProfileController(this._authService, this._firestore, this._picker);
 
   bool _isLoading = false;
   bool _isEditing = false;
   bool _isProcessingImage = false;
   bool _isDeletingProfile = false;
-
   String? _profileImageBase64;
   File? _selectedImageFile;
   Uint8List? _imageBytes;
+  Map<String, String> _formData = {};
 
-  @override
-  void initState() {
-    super.initState();
-    _loadUserData();
-  }
+  bool get isLoading => _isLoading;
+  bool get isEditing => _isEditing;
+  bool get isProcessingImage => _isProcessingImage;
+  bool get isDeletingProfile => _isDeletingProfile;
+  String? get profileImageBase64 => _profileImageBase64;
+  File? get selectedImageFile => _selectedImageFile;
+  Uint8List? get imageBytes => _imageBytes;
+  Map<String, String> get formData => _formData;
 
-  @override
-  void dispose() {
-    _firstNameController.dispose();
-    _lastNameController.dispose();
-    _emailController.dispose();
-    _phoneController.dispose();
-    _bioController.dispose();
-    super.dispose();
-  }
-
-  Future<void> _loadUserData() async {
-    setState(() => _isLoading = true);
+  Future<void> loadUserData() async {
+    _isLoading = true;
+    notifyListeners();
 
     try {
       final currentUser = _authService.currentUser;
@@ -79,11 +74,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
       }
 
       if (userData != null) {
-        _firstNameController.text = userData['firstName'] ?? '';
-        _lastNameController.text = userData['lastName'] ?? '';
-        _emailController.text = userData['email'] ?? currentUser.email ?? '';
-        _phoneController.text = userData['phone'] ?? '';
-        _bioController.text = userData['bio'] ?? '';
+        _formData = {
+          'firstName': userData['firstName'] ?? '',
+          'lastName': userData['lastName'] ?? '',
+          'email': userData['email'] ?? currentUser.email ?? '',
+          'phone': userData['phone'] ?? '',
+          'bio': userData['bio'] ?? '',
+        };
 
         final imageData = userData['profileImage'];
         if (imageData != null && imageData.toString().isNotEmpty) {
@@ -97,30 +94,23 @@ class _ProfileScreenState extends State<ProfileScreen> {
           }
         }
       } else {
-        _emailController.text = currentUser.email ?? '';
+        _formData = {'email': currentUser.email ?? ''};
       }
     } catch (e) {
-      _showSnackBar('Error loading profile data: $e', Colors.red);
+      log('Error loading profile data: $e');
+      rethrow;
     } finally {
-      setState(() => _isLoading = false);
+      _isLoading = false;
+      notifyListeners();
     }
   }
 
-  Future<String?> _convertImageToBase64(File imageFile) async {
-    try {
-      setState(() => _isProcessingImage = true);
-      final bytes = await imageFile.readAsBytes();
-      _imageBytes = bytes;
-      return base64Encode(bytes);
-    } catch (e) {
-      _showSnackBar('Error processing image: $e', Colors.red);
-      return null;
-    } finally {
-      setState(() => _isProcessingImage = false);
-    }
+  void setEditing(bool value) {
+    _isEditing = value;
+    notifyListeners();
   }
 
-  Future<void> _pickImage() async {
+  Future<void> pickImage() async {
     try {
       final XFile? image = await _picker.pickImage(
         source: ImageSource.gallery,
@@ -130,16 +120,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
       );
       if (image != null) {
         final imageFile = File(image.path);
-        setState(() => _selectedImageFile = imageFile);
-        final base64String = await _convertImageToBase64(imageFile);
-        if (base64String != null) _profileImageBase64 = base64String;
+        await _convertImageToBase64(imageFile);
       }
     } catch (e) {
-      _showSnackBar('Error picking image: $e', Colors.red);
+      log('Error picking image: $e');
+      rethrow;
     }
   }
 
-  Future<void> _takePhoto() async {
+  Future<void> takePhoto() async {
     try {
       final XFile? image = await _picker.pickImage(
         source: ImageSource.camera,
@@ -149,24 +138,217 @@ class _ProfileScreenState extends State<ProfileScreen> {
       );
       if (image != null) {
         final imageFile = File(image.path);
-        setState(() => _selectedImageFile = imageFile);
-        final base64String = await _convertImageToBase64(imageFile);
-        if (base64String != null) _profileImageBase64 = base64String;
+        await _convertImageToBase64(imageFile);
       }
     } catch (e) {
-      _showSnackBar('Error taking photo: $e', Colors.red);
+      log('Error taking photo: $e');
+      rethrow;
     }
   }
 
-  void _removeImage() {
-    setState(() {
+  Future<void> _convertImageToBase64(File imageFile) async {
+    try {
+      _isProcessingImage = true;
+      _selectedImageFile = imageFile;
+      notifyListeners();
+
+      final bytes = await imageFile.readAsBytes();
+      _profileImageBase64 = base64Encode(bytes);
+      _imageBytes = bytes;
+    } catch (e) {
+      log('Error processing image: $e');
+      rethrow;
+    } finally {
+      _isProcessingImage = false;
+      notifyListeners();
+    }
+  }
+
+  void removeImage() {
+    _selectedImageFile = null;
+    _profileImageBase64 = null;
+    _imageBytes = null;
+    notifyListeners();
+  }
+
+  Future<void> saveProfile() async {
+    _isLoading = true;
+    notifyListeners();
+
+    try {
+      final currentUser = _authService.currentUser;
+      if (currentUser == null) {
+        throw Exception('No user logged in');
+      }
+
+      final profileData = {
+        'firstName': _formData['firstName']?.trim() ?? '',
+        'lastName': _formData['lastName']?.trim() ?? '',
+        'email': _formData['email']?.trim() ?? '',
+        'phone': _formData['phone']?.trim() ?? '',
+        'bio': _formData['bio']?.trim() ?? '',
+        'updatedAt': FieldValue.serverTimestamp(),
+      };
+
+      if (_profileImageBase64 != null && _profileImageBase64!.isNotEmpty) {
+        profileData['profileImage'] = _profileImageBase64!;
+      } else {
+        profileData['profileImage'] = '';
+      }
+
+      final dataSize = profileData.toString().length;
+      if (dataSize > 800000) {
+        throw Exception('Profile data too large. Please use a smaller image.');
+      }
+
+      final userDoc = await _firestore
+          .collection('users')
+          .doc(currentUser.uid)
+          .get();
+
+      if (userDoc.exists) {
+        await _firestore
+            .collection('users')
+            .doc(currentUser.uid)
+            .update(profileData);
+      } else {
+        final orgDoc = await _firestore
+            .collection('organizers')
+            .doc(currentUser.uid)
+            .get();
+        if (orgDoc.exists) {
+          await _firestore
+              .collection('organizers')
+              .doc(currentUser.uid)
+              .update(profileData);
+        } else {
+          profileData['createdAt'] = FieldValue.serverTimestamp();
+          await _firestore
+              .collection('users')
+              .doc(currentUser.uid)
+              .set(profileData);
+        }
+      }
+
+      _isEditing = false;
       _selectedImageFile = null;
-      _profileImageBase64 = null;
-      _imageBytes = null;
+    } catch (e) {
+      log('Error saving profile: $e');
+      rethrow;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> deleteProfile() async {
+    _isDeletingProfile = true;
+    notifyListeners();
+
+    try {
+      final currentUser = _authService.currentUser;
+      if (currentUser == null) {
+        throw Exception('No user logged in');
+      }
+
+      final userDoc = await _firestore
+          .collection('users')
+          .doc(currentUser.uid)
+          .get();
+
+      if (userDoc.exists) {
+        await _firestore.collection('users').doc(currentUser.uid).delete();
+      } else {
+        final orgDoc = await _firestore
+            .collection('organizers')
+            .doc(currentUser.uid)
+            .get();
+        if (orgDoc.exists) {
+          await _firestore
+              .collection('organizers')
+              .doc(currentUser.uid)
+              .delete();
+        }
+      }
+
+      await currentUser.delete();
+    } catch (e) {
+      log('Error deleting profile: $e');
+      rethrow;
+    } finally {
+      _isDeletingProfile = false;
+      notifyListeners();
+    }
+  }
+
+  void updateFormField(String field, String value) {
+    _formData = {..._formData, field: value};
+    notifyListeners();
+  }
+}
+
+final profileControllerProvider = ChangeNotifierProvider<ProfileController>((
+  ref,
+) {
+  return ProfileController(
+    ref.watch(authServiceProvider),
+    ref.watch(firestoreProvider),
+    ref.watch(imagePickerProvider),
+  );
+});
+
+class ProfileScreen extends ConsumerStatefulWidget {
+  const ProfileScreen({super.key});
+
+  @override
+  ConsumerState<ProfileScreen> createState() => _ProfileScreenState();
+}
+
+class _ProfileScreenState extends ConsumerState<ProfileScreen> {
+  final _formKey = GlobalKey<FormState>();
+  late final TextEditingController _firstNameController;
+  late final TextEditingController _lastNameController;
+  late final TextEditingController _emailController;
+  late final TextEditingController _phoneController;
+  late final TextEditingController _bioController;
+
+  @override
+  void initState() {
+    super.initState();
+    _firstNameController = TextEditingController();
+    _lastNameController = TextEditingController();
+    _emailController = TextEditingController();
+    _phoneController = TextEditingController();
+    _bioController = TextEditingController();
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(profileControllerProvider).loadUserData();
     });
   }
 
+  @override
+  void dispose() {
+    _firstNameController.dispose();
+    _lastNameController.dispose();
+    _emailController.dispose();
+    _phoneController.dispose();
+    _bioController.dispose();
+    super.dispose();
+  }
+
+  void _showSnackBar(String message, Color color) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: color,
+        duration: const Duration(seconds: 3),
+      ),
+    );
+  }
+
   void _showImagePickerDialog() {
+    final controller = ref.read(profileControllerProvider);
+
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -179,7 +361,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
               title: const Text('Choose from Gallery'),
               onTap: () {
                 Navigator.pop(context);
-                _pickImage();
+                controller.pickImage().catchError((e) {
+                  _showSnackBar('Error picking image: $e', Colors.red);
+                });
               },
             ),
             ListTile(
@@ -187,16 +371,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
               title: const Text('Take Photo'),
               onTap: () {
                 Navigator.pop(context);
-                _takePhoto();
+                controller.takePhoto().catchError((e) {
+                  _showSnackBar('Error taking photo: $e', Colors.red);
+                });
               },
             ),
-            if (_profileImageBase64 != null || _imageBytes != null)
+            if (controller.profileImageBase64 != null ||
+                controller.imageBytes != null)
               ListTile(
                 leading: const Icon(Icons.delete, color: Colors.red),
                 title: const Text('Remove Photo'),
                 onTap: () {
                   Navigator.pop(context);
-                  _removeImage();
+                  controller.removeImage();
                 },
               ),
           ],
@@ -285,40 +472,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
 
     if (confirmDelete == true) {
-      setState(() => _isDeletingProfile = true);
-
       try {
-        final currentUser = _authService.currentUser;
-        if (currentUser == null) {
-          _showSnackBar('No user logged in', Colors.red);
-          return;
-        }
-
-        final userDoc = await _firestore
-            .collection('users')
-            .doc(currentUser.uid)
-            .get();
-
-        if (userDoc.exists) {
-          await _firestore.collection('users').doc(currentUser.uid).delete();
-        } else {
-          final orgDoc = await _firestore
-              .collection('organizers')
-              .doc(currentUser.uid)
-              .get();
-          if (orgDoc.exists) {
-            await _firestore
-                .collection('organizers')
-                .doc(currentUser.uid)
-                .delete();
-          }
-        }
-
-        await currentUser.delete();
-
+        await ref.read(profileControllerProvider).deleteProfile();
         _showSnackBar('Profile deleted successfully', Colors.green);
 
-        if (context.mounted) {
+        if (mounted) {
           Navigator.pushAndRemoveUntil(
             context,
             MaterialPageRoute(builder: (context) => const LoginScreen()),
@@ -326,10 +484,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           );
         }
       } catch (e) {
-        log('Error deleting profile: $e');
         _showSnackBar('Error deleting profile: $e', Colors.red);
-      } finally {
-        setState(() => _isDeletingProfile = false);
       }
     }
   }
@@ -337,91 +492,24 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Future<void> _saveProfile() async {
     if (!_formKey.currentState!.validate()) return;
 
-    setState(() => _isLoading = true);
+    final controller = ref.read(profileControllerProvider);
+
+    // Update form data
+    controller.updateFormField('firstName', _firstNameController.text);
+    controller.updateFormField('lastName', _lastNameController.text);
+    controller.updateFormField('email', _emailController.text);
+    controller.updateFormField('phone', _phoneController.text);
+    controller.updateFormField('bio', _bioController.text);
 
     try {
-      final currentUser = _authService.currentUser;
-      if (currentUser == null) {
-        _showSnackBar('No user logged in', Colors.red);
-        return;
-      }
-
-      final profileData = {
-        'firstName': _firstNameController.text.trim(),
-        'lastName': _lastNameController.text.trim(),
-        'email': _emailController.text.trim(),
-        'phone': _phoneController.text.trim(),
-        'bio': _bioController.text.trim(),
-        'updatedAt': FieldValue.serverTimestamp(),
-      };
-
-      if (_profileImageBase64 != null && _profileImageBase64!.isNotEmpty) {
-        profileData['profileImage'] = _profileImageBase64!;
-      } else {
-        profileData['profileImage'] = '';
-      }
-
-      final dataSize = profileData.toString().length;
-      if (dataSize > 800000) {
-        _showSnackBar(
-          'Profile data too large. Please use a smaller image.',
-          Colors.red,
-        );
-        return;
-      }
-
-      final userDoc = await _firestore
-          .collection('users')
-          .doc(currentUser.uid)
-          .get();
-      if (userDoc.exists) {
-        await _firestore
-            .collection('users')
-            .doc(currentUser.uid)
-            .update(profileData);
-      } else {
-        final orgDoc = await _firestore
-            .collection('organizers')
-            .doc(currentUser.uid)
-            .get();
-        if (orgDoc.exists) {
-          await _firestore
-              .collection('organizers')
-              .doc(currentUser.uid)
-              .update(profileData);
-        } else {
-          profileData['createdAt'] = FieldValue.serverTimestamp();
-          await _firestore
-              .collection('users')
-              .doc(currentUser.uid)
-              .set(profileData);
-        }
-      }
-
-      setState(() {
-        _isEditing = false;
-        _selectedImageFile = null;
-      });
-
+      await controller.saveProfile();
       _showSnackBar('Profile updated successfully!', Colors.green);
     } catch (e) {
       _showSnackBar('Error saving profile: $e', Colors.red);
-    } finally {
-      setState(() => _isLoading = false);
     }
   }
 
-  void _showSnackBar(String message, Color color) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: color,
-        duration: const Duration(seconds: 3),
-      ),
-    );
-  }
-
-  Widget _buildProfileImage() {
+  Widget _buildProfileImage(ProfileController controller) {
     return Center(
       child: Stack(
         children: [
@@ -436,12 +524,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 width: 3,
               ),
             ),
-            child: _isProcessingImage
+            child: controller.isProcessingImage
                 ? const Center(child: CircularProgressIndicator())
-                : _imageBytes != null
+                : controller.imageBytes != null
                 ? ClipOval(
                     child: Image.memory(
-                      _imageBytes!,
+                      controller.imageBytes!,
                       width: 120,
                       height: 120,
                       fit: BoxFit.cover,
@@ -455,11 +543,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       53,
                       137,
                       158,
-                      // ignore: deprecated_member_use
                     ).withOpacity(0.7),
                   ),
           ),
-          if (_isEditing)
+          if (controller.isEditing)
             Positioned(
               bottom: 0,
               right: 0,
@@ -491,7 +578,24 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  Widget _buildProfileForm() {
+  Widget _buildProfileForm(ProfileController controller) {
+    // Sync controllers with state
+    if (_firstNameController.text != controller.formData['firstName']) {
+      _firstNameController.text = controller.formData['firstName'] ?? '';
+    }
+    if (_lastNameController.text != controller.formData['lastName']) {
+      _lastNameController.text = controller.formData['lastName'] ?? '';
+    }
+    if (_emailController.text != controller.formData['email']) {
+      _emailController.text = controller.formData['email'] ?? '';
+    }
+    if (_phoneController.text != controller.formData['phone']) {
+      _phoneController.text = controller.formData['phone'] ?? '';
+    }
+    if (_bioController.text != controller.formData['bio']) {
+      _bioController.text = controller.formData['bio'] ?? '';
+    }
+
     final inputDecoration = InputDecoration(
       border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
       labelStyle: const TextStyle(
@@ -499,7 +603,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         fontWeight: FontWeight.w600,
       ),
       filled: true,
-      fillColor: Colors.grey.shade100,
+      fillColor: const Color.fromARGB(255, 22, 22, 22),
     );
 
     return Form(
@@ -508,8 +612,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const SizedBox(height: 20),
-          Center(child: _buildProfileImage()),
-          if (_isProcessingImage)
+          Center(child: _buildProfileImage(controller)),
+          if (controller.isProcessingImage)
             const Padding(
               padding: EdgeInsets.only(top: 10),
               child: Center(
@@ -520,15 +624,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ),
             ),
           const SizedBox(height: 30),
-
           Row(
             children: [
               Expanded(
                 child: TextFormField(
                   controller: _firstNameController,
-                  enabled: _isEditing,
+                  enabled: controller.isEditing,
                   style: const TextStyle(
-                    color: Colors.black,
+                    color: Color.fromARGB(255, 245, 243, 243),
                     fontWeight: FontWeight.bold,
                   ),
                   decoration: inputDecoration.copyWith(
@@ -547,9 +650,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
               Expanded(
                 child: TextFormField(
                   controller: _lastNameController,
-                  enabled: _isEditing,
+                  enabled: controller.isEditing,
                   style: const TextStyle(
-                    color: Colors.black,
+                    color: Color.fromARGB(255, 243, 241, 241),
                     fontWeight: FontWeight.bold,
                   ),
                   decoration: inputDecoration.copyWith(
@@ -566,30 +669,26 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ),
             ],
           ),
-
           const SizedBox(height: 16),
-
           TextFormField(
             controller: _emailController,
             enabled: false,
             style: const TextStyle(
-              color: Colors.black,
+              color: Color.fromARGB(255, 243, 241, 241),
               fontWeight: FontWeight.bold,
             ),
             decoration: inputDecoration.copyWith(
               labelText: 'Email',
               prefixIcon: const Icon(Icons.email_outlined, color: Colors.teal),
-              fillColor: Colors.grey.shade200,
+              fillColor: const Color.fromARGB(255, 22, 22, 22),
             ),
           ),
-
           const SizedBox(height: 16),
-
           TextFormField(
             controller: _phoneController,
-            enabled: _isEditing,
+            enabled: controller.isEditing,
             style: const TextStyle(
-              color: Colors.black,
+              color: Color.fromARGB(255, 243, 241, 241),
               fontWeight: FontWeight.bold,
             ),
             keyboardType: TextInputType.phone,
@@ -598,15 +697,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
               prefixIcon: const Icon(Icons.phone_outlined, color: Colors.teal),
             ),
           ),
-
           const SizedBox(height: 16),
-
           TextFormField(
             controller: _bioController,
-            enabled: _isEditing,
+            enabled: controller.isEditing,
             maxLines: 3,
             style: const TextStyle(
-              color: Colors.black,
+              color: Color.fromARGB(255, 243, 241, 241),
               fontWeight: FontWeight.bold,
             ),
             decoration: inputDecoration.copyWith(
@@ -618,7 +715,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
               alignLabelWithHint: true,
             ),
           ),
-
           const SizedBox(height: 20),
         ],
       ),
@@ -627,6 +723,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final controller = ref.watch(profileControllerProvider);
+    final authService = ref.watch(authServiceProvider);
+
     return Scaffold(
       appBar: AppBar(
         title: const Text(
@@ -634,9 +733,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
           style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
         ),
         centerTitle: true,
-        backgroundColor: const Color.fromARGB(255, 53, 137, 158),
+        backgroundColor: AppColors.card,
         foregroundColor: Colors.white,
-
         leading: PopupMenuButton<String>(
           icon: const Icon(
             Icons.more_vert,
@@ -650,17 +748,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
           onSelected: (value) {
             if (value == 'edit') {
-              setState(() => _isEditing = true);
+              controller.setEditing(true);
             } else if (value == 'delete') {
               _deleteProfile();
             }
           },
-          itemBuilder: (BuildContext context) => [
+          itemBuilder: (BuildContext context) => const [
             PopupMenuItem<String>(
               value: 'edit',
               child: ListTile(
                 leading: Icon(Icons.edit, color: Colors.blue),
-                title: const Text(
+                title: Text(
                   'Edit Profile',
                   style: TextStyle(
                     fontWeight: FontWeight.w500,
@@ -674,7 +772,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               value: 'delete',
               child: ListTile(
                 leading: Icon(Icons.delete_forever, color: Colors.red),
-                title: const Text(
+                title: Text(
                   'Delete Profile',
                   style: TextStyle(
                     fontWeight: FontWeight.w500,
@@ -709,7 +807,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               );
 
               if (confirm == true) {
-                await _authService.signOut();
+                await authService.signOut();
                 if (context.mounted) {
                   Navigator.pushAndRemoveUntil(
                     context,
@@ -724,9 +822,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
         ],
       ),
-      body: _isLoading && !_isEditing
+      body: controller.isLoading && !controller.isEditing
           ? const Center(child: CircularProgressIndicator())
-          : _isDeletingProfile
+          : controller.isDeletingProfile
           ? Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -757,10 +855,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 Expanded(
                   child: SingleChildScrollView(
                     padding: const EdgeInsets.all(16),
-                    child: _buildProfileForm(),
+                    child: _buildProfileForm(controller),
                   ),
                 ),
-                if (_isEditing)
+                if (controller.isEditing)
                   Padding(
                     padding: const EdgeInsets.all(16),
                     child: Row(
@@ -768,8 +866,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         Expanded(
                           child: ElevatedButton(
                             onPressed: () {
-                              setState(() => _isEditing = false);
-                              _loadUserData();
+                              controller.setEditing(false);
+                              controller.loadUserData();
                             },
                             style: ElevatedButton.styleFrom(
                               backgroundColor: Colors.grey,
@@ -781,7 +879,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         const SizedBox(width: 16),
                         Expanded(
                           child: ElevatedButton(
-                            onPressed: (_isLoading || _isProcessingImage)
+                            onPressed:
+                                (controller.isLoading ||
+                                    controller.isProcessingImage)
                                 ? null
                                 : _saveProfile,
                             style: ElevatedButton.styleFrom(
@@ -793,7 +893,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               ),
                               foregroundColor: Colors.white,
                             ),
-                            child: _isLoading
+                            child: controller.isLoading
                                 ? const SizedBox(
                                     height: 20,
                                     width: 20,

@@ -2,20 +2,30 @@ import 'dart:convert';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:event_buddy/screens/add_event_screen.dart';
 import 'package:event_buddy/screens/event_detail_screen.dart';
-import 'package:event_buddy/screens/navigation_screen.dart';
 import 'package:event_buddy/services/join_leave_event.dart';
 import 'package:event_buddy/services/push_notification_service.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../theme/app_colors.dart';
 
-class HomeScreen extends StatefulWidget {
+// Providers
+final eventsStreamProvider = StreamProvider<QuerySnapshot>((ref) {
+  return FirebaseFirestore.instance.collection('events').snapshots();
+});
+
+final eventActionServiceProvider = Provider<EventActionService>((ref) {
+  return EventActionService();
+});
+
+class HomeScreen extends ConsumerStatefulWidget {
   final bool? isOrganizer;
   const HomeScreen({super.key, required this.isOrganizer});
 
   @override
-  State<HomeScreen> createState() => _HomeScreenState();
+  ConsumerState<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class _HomeScreenState extends ConsumerState<HomeScreen> {
   @override
   void initState() {
     super.initState();
@@ -28,15 +38,12 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final eventsAsyncValue = ref.watch(eventsStreamProvider);
+    final eventActionService = ref.read(eventActionServiceProvider);
+
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: const Color.fromARGB(255, 53, 137, 158),
-        foregroundColor: Colors.white,
-        centerTitle: true,
-        title: const Text(
-          'Home',
-          style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-        ),
+        title: const Text("Home"),
         leading: widget.isOrganizer == true
             ? IconButton(
                 icon: const Icon(Icons.add),
@@ -50,37 +57,27 @@ class _HomeScreenState extends State<HomeScreen> {
                 },
               )
             : null,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.search),
-            onPressed: () {
-              showSearch(
-                context: context,
-                delegate: CustomSearchDelegate(isOrganizer: widget.isOrganizer),
-              );
-            },
-          ),
-        ],
+        actions: [IconButton(icon: const Icon(Icons.search), onPressed: () {})],
       ),
-      body: StreamBuilder<QuerySnapshot>(
-        stream: FirebaseFirestore.instance.collection('events').snapshots(),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+      body: eventsAsyncValue.when(
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (error, stackTrace) => Center(
+          child: Text(
+            'Error: $error',
+            style: const TextStyle(color: AppColors.accentRed),
+          ),
+        ),
+        data: (snapshot) {
+          if (snapshot.docs.isEmpty) {
             return const Center(
               child: Text(
                 "All Events will be displayed here.",
-                style: TextStyle(
-                  fontSize: 18,
-                  color: Color.fromARGB(255, 157, 191, 207),
-                ),
+                style: TextStyle(fontSize: 18, color: AppColors.textSecondary),
               ),
             );
           }
 
-          final events = snapshot.data!.docs;
+          final events = snapshot.docs;
 
           return ListView.builder(
             itemCount: events.length,
@@ -89,6 +86,7 @@ class _HomeScreenState extends State<HomeScreen> {
               final data = event.data() as Map<String, dynamic>;
 
               return Card(
+                color: AppColors.card,
                 margin: const EdgeInsets.all(8),
                 child: ListTile(
                   leading:
@@ -114,8 +112,18 @@ class _HomeScreenState extends State<HomeScreen> {
                             fit: BoxFit.cover,
                           ),
                         )
-                      : const Icon(Icons.event, size: 50),
-                  title: Text(data['name'] ?? 'No Name'),
+                      : const Icon(
+                          Icons.event,
+                          size: 50,
+                          color: AppColors.textSecondary,
+                        ),
+                  title: Text(
+                    data['name'] ?? 'No Name',
+                    style: const TextStyle(
+                      color: AppColors.textPrimary,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                   subtitle: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -123,6 +131,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         data['description'] ?? 'No Description',
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(color: AppColors.textSecondary),
                       ),
                       const SizedBox(height: 6),
                       Row(
@@ -130,15 +139,20 @@ class _HomeScreenState extends State<HomeScreen> {
                           const Icon(
                             Icons.calendar_today,
                             size: 14,
-                            color: Colors.grey,
+                            color: AppColors.textSecondary,
                           ),
                           const SizedBox(width: 6),
-                          Text(data['date'] ?? 'No Date'),
+                          Text(
+                            data['date'] ?? 'No Date',
+                            style: const TextStyle(
+                              color: AppColors.textSecondary,
+                            ),
+                          ),
                           const SizedBox(width: 12),
                           const Icon(
                             Icons.location_on,
                             size: 14,
-                            color: Colors.grey,
+                            color: AppColors.textSecondary,
                           ),
                           const SizedBox(width: 6),
                           Expanded(
@@ -146,6 +160,9 @@ class _HomeScreenState extends State<HomeScreen> {
                               data['location'] ?? 'No Location',
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                color: AppColors.textSecondary,
+                              ),
                             ),
                           ),
                         ],
@@ -159,7 +176,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         builder: (context) => EventDetailScreen(
                           isOrganizer: widget.isOrganizer,
                           eventDoc: event,
-                          joinLeaveService: EventActionService(),
+                          joinLeaveService: eventActionService,
                         ),
                       ),
                     );

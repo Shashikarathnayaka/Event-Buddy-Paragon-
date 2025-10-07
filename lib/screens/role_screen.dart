@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:event_buddy/screens/navigation_screen.dart';
+import 'package:event_buddy/theme/app_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -27,7 +28,6 @@ class RoleSelectionScreen extends StatelessWidget {
     final authService = AuthService();
     User? user = FirebaseAuth.instance.currentUser;
 
-    debugPrint('=== AUTHENTICATION DEBUG ===');
     debugPrint('fromGoogle: $fromGoogle');
     debugPrint('Current user: ${user?.uid}');
     debugPrint('Email: ${user?.email}');
@@ -94,7 +94,6 @@ class RoleSelectionScreen extends StatelessWidget {
         "createdAt": FieldValue.serverTimestamp(),
       };
 
-      debugPrint('=== SAVING USER DATA ===');
       debugPrint('Selected Role: $role');
       debugPrint('User ID: ${user.uid}');
       debugPrint('User Data: $userData');
@@ -147,11 +146,11 @@ class RoleSelectionScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.card,
       appBar: AppBar(
         title: const Text("Choose Your Role"),
         centerTitle: true,
-        backgroundColor: Colors.blueAccent,
+        backgroundColor: AppColors.card,
         foregroundColor: Colors.white,
       ),
       body: Padding(

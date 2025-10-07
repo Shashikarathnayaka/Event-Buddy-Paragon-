@@ -1,10 +1,20 @@
 import 'dart:developer';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:event_buddy/screens/add_event_screen.dart';
 import 'package:event_buddy/screens/event_detail_screen.dart';
-import 'package:event_buddy/screens/navigation_screen.dart';
 import 'package:event_buddy/services/join_leave_event.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+// Optional: Create providers for Firebase instances if needed
+final firebaseAuthProvider = Provider<FirebaseAuth>((ref) {
+  return FirebaseAuth.instance;
+});
+
+final firestoreProvider = Provider<FirebaseFirestore>((ref) {
+  return FirebaseFirestore.instance;
+});
 
 class MyEventsContent extends StatefulWidget {
   final bool? isOrganizer;
@@ -21,20 +31,34 @@ class _MyEventsContentState extends State<MyEventsContent> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text(
-          'My Events',
-          style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-        ),
-        centerTitle: true,
-        backgroundColor: const Color.fromARGB(255, 53, 137, 158),
-        foregroundColor: Colors.white,
+        title: const Text("my events"),
+        leading: widget.isOrganizer == true
+            ? IconButton(
+                icon: const Icon(Icons.add),
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const AddEventScreen(organizer: ''),
+                    ),
+                  );
+                },
+              )
+            : null,
         actions: [
-          IconButton(
-            icon: const Icon(Icons.search),
-            onPressed: () {
-              showSearch(
-                context: context,
-                delegate: CustomSearchDelegate(isOrganizer: widget.isOrganizer),
+          Consumer(
+            builder: (context, ref, child) {
+              return IconButton(
+                icon: const Icon(Icons.search),
+                onPressed: () {
+                  showSearch(
+                    context: context,
+                    delegate: CustomSearchDelegate(
+                      isOrganizer: widget.isOrganizer,
+                      ref: ref,
+                    ),
+                  );
+                },
               );
             },
           ),
@@ -134,7 +158,6 @@ class _MyEventsContentState extends State<MyEventsContent> {
                     _buildEventsList(createdEvents),
                     const SizedBox(height: 20),
                   ],
-
                   if (filteredJoinedEvents.isNotEmpty) ...[
                     _buildSectionHeader(
                       'Joined Events',
@@ -144,14 +167,12 @@ class _MyEventsContentState extends State<MyEventsContent> {
                     _buildEventsList(filteredJoinedEvents),
                     const SizedBox(height: 20),
                   ],
-
                   if (createdEvents.isNotEmpty && filteredJoinedEvents.isEmpty)
                     _buildEmptySection(
                       'joined',
                       Icons.event_available,
                       Colors.blue,
                     ),
-
                   if (createdEvents.isEmpty && filteredJoinedEvents.isNotEmpty)
                     _buildEmptySection('created', Icons.create, Colors.green),
                 ],
@@ -190,15 +211,12 @@ class _MyEventsContentState extends State<MyEventsContent> {
         width: double.infinity,
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
-          // ignore: deprecated_member_use
           color: color.withOpacity(0.1),
           borderRadius: BorderRadius.circular(12),
-          // ignore: deprecated_member_use
           border: Border.all(color: color.withOpacity(0.3)),
         ),
         child: Column(
           children: [
-            // ignore: deprecated_member_use
             Icon(icon, color: color.withOpacity(0.6), size: 48),
             const SizedBox(height: 8),
             Text(
@@ -208,7 +226,6 @@ class _MyEventsContentState extends State<MyEventsContent> {
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 16,
-                // ignore: deprecated_member_use
                 color: color.withOpacity(0.8),
                 fontWeight: FontWeight.w500,
               ),
@@ -285,85 +302,131 @@ class _MyEventsContentState extends State<MyEventsContent> {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),
-          child: ListTile(
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: 16,
-              vertical: 8,
-            ),
-            title: Text(
-              eventData['name'] ?? 'No title',
-              style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
-            ),
-            subtitle: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const SizedBox(height: 4),
-                Row(
-                  children: [
-                    const Icon(
-                      Icons.calendar_today,
-                      size: 14,
-                      color: Colors.grey,
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      eventData['date'] ?? 'No date',
-                      style: const TextStyle(fontSize: 14, color: Colors.grey),
-                    ),
-                  ],
+          child: Consumer(
+            builder: (context, ref, child) {
+              return ListTile(
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 8,
                 ),
-                if (eventData['location'] != null) ...[
-                  const SizedBox(height: 2),
-                  Row(
-                    children: [
-                      const Icon(
-                        Icons.location_on,
-                        size: 14,
-                        color: Colors.grey,
-                      ),
-                      const SizedBox(width: 4),
-                      Expanded(
-                        child: Text(
-                          eventData['location'] ?? '',
+                title: Text(
+                  eventData['name'] ?? 'No title',
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 16,
+                  ),
+                ),
+                subtitle: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const SizedBox(height: 4),
+                    Row(
+                      children: [
+                        const Icon(
+                          Icons.calendar_today,
+                          size: 14,
+                          color: Colors.grey,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          eventData['date'] ?? 'No date',
                           style: const TextStyle(
                             fontSize: 14,
                             color: Colors.grey,
                           ),
-                          overflow: TextOverflow.ellipsis,
                         ),
+                      ],
+                    ),
+                    if (eventData['location'] != null) ...[
+                      const SizedBox(height: 2),
+                      Row(
+                        children: [
+                          const Icon(
+                            Icons.location_on,
+                            size: 14,
+                            color: Colors.grey,
+                          ),
+                          const SizedBox(width: 4),
+                          Expanded(
+                            child: Text(
+                              eventData['location'] ?? '',
+                              style: const TextStyle(
+                                fontSize: 14,
+                                color: Colors.grey,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
                       ),
                     ],
+                  ],
+                ),
+                trailing: Container(
+                  decoration: BoxDecoration(
+                    color: const Color.fromARGB(
+                      255,
+                      53,
+                      137,
+                      158,
+                    ).withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(20),
                   ),
-                ],
-              ],
-            ),
-            trailing: Container(
-              decoration: BoxDecoration(
-                // ignore: deprecated_member_use
-                color: const Color.fromARGB(255, 53, 137, 158).withOpacity(0.1),
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: const Icon(
-                Icons.arrow_forward_ios,
-                color: Color.fromARGB(255, 53, 137, 158),
-                size: 18,
-              ),
-            ),
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => EventDetailScreen(
-                    isOrganizer: widget.isOrganizer,
-                    eventDoc: event,
-                    joinLeaveService: EventActionService(),
+                  child: const Icon(
+                    Icons.arrow_forward_ios,
+                    color: Color.fromARGB(255, 53, 137, 158),
+                    size: 18,
                   ),
                 ),
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => EventDetailScreen(
+                        isOrganizer: widget.isOrganizer,
+                        eventDoc: event,
+                        joinLeaveService: EventActionService(),
+                      ),
+                    ),
+                  );
+                },
               );
             },
           ),
         );
       },
     );
+  }
+}
+
+class CustomSearchDelegate extends SearchDelegate {
+  final bool? isOrganizer;
+  final WidgetRef ref;
+
+  CustomSearchDelegate({required this.isOrganizer, required this.ref});
+
+  @override
+  List<Widget>? buildActions(BuildContext context) {
+    return [
+      IconButton(onPressed: () => query = "", icon: const Icon(Icons.clear)),
+    ];
+  }
+
+  @override
+  Widget? buildLeading(BuildContext context) {
+    return IconButton(
+      onPressed: () => close(context, null),
+      icon: const Icon(Icons.arrow_back),
+    );
+  }
+
+  @override
+  Widget buildResults(BuildContext context) {
+    return Center(child: Text("Search result for $query"));
+  }
+
+  @override
+  Widget buildSuggestions(BuildContext context) {
+    return Center(child: Text("Suggestions for $query"));
   }
 }

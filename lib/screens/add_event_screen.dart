@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:event_buddy/services/event_service.dart';
 import 'package:event_buddy/services/auth_service.dart';
 import 'package:event_buddy/services/notification_trigger_service.dart';
+import 'package:event_buddy/theme/app_colors.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
@@ -309,11 +310,10 @@ class _AddEventScreenState extends State<AddEventScreen> {
           style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
         ),
         centerTitle: true,
-        backgroundColor: const Color.fromARGB(255, 53, 137, 158),
+        backgroundColor: AppColors.card,
         foregroundColor: Colors.white,
       ),
 
-    
       // backgroundColor: const Color.fromARGB(
       //   255,
       //   143,
@@ -367,7 +367,7 @@ class _AddEventScreenState extends State<AddEventScreen> {
                       ).copyWith(
                         prefixIcon: const Icon(Icons.celebration),
                         filled: true,
-                        fillColor: const Color(0xFFF5F5F5),
+                        fillColor: const Color.fromARGB(255, 15, 15, 15),
                       ),
                   validator: (v) => (v == null || v.trim().isEmpty)
                       ? "Please enter event name"
@@ -389,7 +389,7 @@ class _AddEventScreenState extends State<AddEventScreen> {
                             ).copyWith(
                               prefixIcon: const Icon(Icons.calendar_month),
                               filled: true,
-                              fillColor: const Color(0xFFF5F5F5),
+                              fillColor: const Color.fromARGB(255, 15, 15, 15),
                             ),
                         onTap: () async {
                           DateTime? pickedDate = await showDatePicker(
@@ -427,7 +427,7 @@ class _AddEventScreenState extends State<AddEventScreen> {
                             ).copyWith(
                               prefixIcon: const Icon(Icons.access_time),
                               filled: true,
-                              fillColor: const Color(0xFFF5F5F5),
+                              fillColor: const Color.fromARGB(255, 15, 15, 15),
                             ),
                         onTap: _selectTime,
                         validator: (v) => (v == null || v.trim().isEmpty)
@@ -448,7 +448,7 @@ class _AddEventScreenState extends State<AddEventScreen> {
                       ).copyWith(
                         prefixIcon: const Icon(Icons.location_on),
                         filled: true,
-                        fillColor: const Color(0xFFF5F5F5),
+                        fillColor: const Color.fromARGB(255, 15, 15, 15),
                       ),
                   validator: (v) => (v == null || v.trim().isEmpty)
                       ? "Please enter event location"
@@ -466,7 +466,7 @@ class _AddEventScreenState extends State<AddEventScreen> {
                       ).copyWith(
                         prefixIcon: const Icon(Icons.description),
                         filled: true,
-                        fillColor: const Color(0xFFF5F5F5),
+                        fillColor: const Color.fromARGB(255, 15, 15, 15),
                       ),
                   validator: (v) => (v == null || v.trim().isEmpty)
                       ? "Please enter event description"
@@ -491,7 +491,7 @@ class _AddEventScreenState extends State<AddEventScreen> {
                         : const Icon(Icons.save, size: 22),
                     label: Text(_saving ? "Saving Event" : "Save Event"),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color.fromARGB(255, 53, 137, 158),
+                      backgroundColor: const Color.fromARGB(255, 8, 8, 8),
                       foregroundColor: Colors.white,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(30),
