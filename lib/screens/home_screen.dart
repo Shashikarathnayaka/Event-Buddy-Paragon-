@@ -42,7 +42,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final eventActionService = ref.read(eventActionServiceProvider);
 
     return Scaffold(
-      backgroundColor: const Color.fromRGBO(247, 250, 252, 1.0),
+      backgroundColor: AppColors.card,
 
       appBar: AppBar(
         title: const Text("Home"),
@@ -89,7 +89,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               final data = event.data() as Map<String, dynamic>;
 
               return Card(
-                color: AppColors.card,
+                color: const Color(0xFF1C1A27),
                 margin: const EdgeInsets.all(8),
                 child: ListTile(
                   leading:

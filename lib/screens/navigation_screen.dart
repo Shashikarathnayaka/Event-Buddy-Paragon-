@@ -1,5 +1,3 @@
-
-
 import 'dart:convert';
 import 'dart:typed_data';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -10,45 +8,73 @@ import 'package:event_buddy/screens/profile_screen.dart';
 import 'package:event_buddy/services/join_leave_event.dart';
 import 'package:event_buddy/theme/app_colors.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-class NavigationScreen extends StatefulWidget {
-  final bool? isOrganizer;
-  const NavigationScreen({
-    super.key,
-    required String userName,
-    this.isOrganizer,
-  });
+final selectedPageIndexProvider = NotifierProvider<SelectedPageNotifier, int>(
+  SelectedPageNotifier.new,
+);
 
+class SelectedPageNotifier extends Notifier<int> {
   @override
-  State<NavigationScreen> createState() => _HomeScreenState();
+  int build() => 0;
+
+  void setPage(int index) {
+    state = index;
+  }
 }
 
-class _HomeScreenState extends State<NavigationScreen> {
-  late List<Widget> _pages;
+final searchQueryProvider = NotifierProvider<SearchQueryNotifier, String>(
+  SearchQueryNotifier.new,
+);
 
+class SearchQueryNotifier extends Notifier<String> {
   @override
-  void initState() {
-    super.initState();
-    _pages = [
-      HomeScreen(isOrganizer: widget.isOrganizer ?? true),
-      MyEventsContent(isOrganizer: widget.isOrganizer ?? true),
-      ProfileScreen(),
-    ];
+  String build() => '';
+
+  void setQuery(String query) {
+    state = query;
   }
 
-  int _selectedPageIndex = 0;
+  void clear() {
+    state = '';
+  }
+}
 
-  void _onItemTapped(int index) {
-    setState(() {
-      _selectedPageIndex = index;
+final eventSearchProvider =
+    FutureProvider.family<List<QueryDocumentSnapshot>, String>((
+      ref,
+      query,
+    ) async {
+      if (query.isEmpty) return [];
+
+      final firestore = FirebaseFirestore.instance;
+      final snapshot = await firestore
+          .collection('events')
+          .where('name', isGreaterThanOrEqualTo: query)
+          .where('name', isLessThanOrEqualTo: '$query\uf8ff')
+          .get();
+
+      return snapshot.docs;
     });
-  }
+
+class NavigationScreen extends ConsumerWidget {
+  final bool? isOrganizer;
+  final String userName;
+
+  const NavigationScreen({super.key, required this.userName, this.isOrganizer});
 
   @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      body: _pages[_selectedPageIndex],
+  Widget build(BuildContext context, WidgetRef ref) {
+    final selectedIndex = ref.watch(selectedPageIndexProvider);
 
+    final pages = [
+      HomeScreen(isOrganizer: isOrganizer ?? true),
+      MyEventsContent(isOrganizer: isOrganizer ?? true),
+      const ProfileScreen(),
+    ];
+
+    return Scaffold(
+      body: pages[selectedIndex],
       bottomNavigationBar: ClipRRect(
         borderRadius: const BorderRadius.only(
           topLeft: Radius.circular(25.0),
@@ -82,8 +108,10 @@ class _HomeScreenState extends State<NavigationScreen> {
               label: 'Profile',
             ),
           ],
-          currentIndex: _selectedPageIndex,
-          onTap: _onItemTapped,
+          currentIndex: selectedIndex,
+          onTap: (index) {
+            ref.read(selectedPageIndexProvider.notifier).setPage(index);
+          },
         ),
       ),
     );
@@ -91,18 +119,17 @@ class _HomeScreenState extends State<NavigationScreen> {
 }
 
 class CustomSearchDelegate extends SearchDelegate {
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final WidgetRef ref;
   final bool? isOrganizer;
 
-  CustomSearchDelegate({this.isOrganizer});
+  CustomSearchDelegate({required this.ref, this.isOrganizer});
 
   @override
   ThemeData appBarTheme(BuildContext context) {
     final theme = Theme.of(context);
     return theme.copyWith(
       appBarTheme: const AppBarTheme(
-        backgroundColor: Color.fromRGBO(102, 126, 234, 1.0),
-        backgroundColor: Color.fromRGBO(102, 126, 234, 1.0),
+        backgroundColor: AppColors.card,
         elevation: 0,
         iconTheme: IconThemeData(color: Colors.white),
       ),
@@ -117,15 +144,12 @@ class CustomSearchDelegate extends SearchDelegate {
           borderSide: BorderSide.none,
         ),
         filled: true,
-        // ignore: deprecated_member_use
-        fillColor: Colors.white.withOpacity(0.2),
-        // ignore: deprecated_member_use
         fillColor: Colors.white.withOpacity(0.2),
         contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 6),
-        constraints: BoxConstraints(maxWidth: double.infinity, minHeight: 40),
-      ),
-      textTheme: theme.textTheme.copyWith(
-        titleLarge: const TextStyle(color: Colors.white, fontSize: 18),
+        constraints: const BoxConstraints(
+          maxWidth: double.infinity,
+          minHeight: 40,
+        ),
       ),
       textTheme: theme.textTheme.copyWith(
         titleLarge: const TextStyle(color: Colors.white, fontSize: 18),
@@ -141,6 +165,7 @@ class CustomSearchDelegate extends SearchDelegate {
           icon: const Icon(Icons.clear),
           onPressed: () {
             query = '';
+            ref.read(searchQueryProvider.notifier).clear();
           },
         ),
     ];
@@ -168,164 +193,97 @@ class CustomSearchDelegate extends SearchDelegate {
           ),
         ),
       );
-      return const Center(
-        child: Text(
-          'Search events...',
-          style: TextStyle(
-            fontSize: 16,
-            color: Color.fromRGBO(113, 128, 150, 1.0),
-          ),
-        ),
-      );
     }
-    return FutureBuilder<QuerySnapshot>(
-      future: _firestore
-          .collection('events')
-          .where('name', isGreaterThanOrEqualTo: query)
-          .where('name', isLessThanOrEqualTo: '$query\uf8ff')
-          .get(),
-      builder: (context, snapshot) {
-        if (!snapshot.hasData) {
-          return const Center(
-            child: CircularProgressIndicator(
-              color: Color.fromRGBO(102, 126, 234, 1.0),
-            ),
-          );
-          return const Center(
-            child: CircularProgressIndicator(
-              color: Color.fromRGBO(102, 126, 234, 1.0),
-            ),
-          );
-        }
 
-        var results = snapshot.data!.docs;
-        if (results.isEmpty) {
-          return const Center(
-            child: Text(
-              'No events found.',
-              style: TextStyle(
-                fontSize: 16,
-                color: Color.fromRGBO(113, 128, 150, 1.0),
-              ),
-            ),
-          );
-        }
-        if (results.isEmpty) {
-          return const Center(
-            child: Text(
-              'No events found.',
-              style: TextStyle(
-                fontSize: 16,
-                color: Color.fromRGBO(113, 128, 150, 1.0),
-              ),
-            ),
-          );
-        }
+    return Consumer(
+      builder: (context, ref, child) {
+        final searchResults = ref.watch(eventSearchProvider(query));
 
-        return ListView.builder(
-          padding: const EdgeInsets.all(8),
-          padding: const EdgeInsets.all(8),
-          itemCount: results.length,
-          itemBuilder: (context, index) {
-            var event = results[index];
-            var data = event.data() as Map<String, dynamic>;
-
-            return Card(
-              margin: const EdgeInsets.symmetric(vertical: 6, horizontal: 8),
-              elevation: 2,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: ListTile(
-                contentPadding: const EdgeInsets.all(12),
-                leading: Container(
-                  width: 50,
-                  height: 50,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(8),
-                    color: const Color.fromRGBO(102, 126, 234, 0.1),
-                  ),
-                  child: const Icon(
-                    Icons.event,
-                    color: Color.fromRGBO(102, 126, 234, 1.0),
+        return searchResults.when(
+          data: (results) {
+            if (results.isEmpty) {
+              return const Center(
+                child: Text(
+                  'No events found.',
+                  style: TextStyle(
+                    fontSize: 16,
+                    color: Color.fromRGBO(113, 128, 150, 1.0),
                   ),
                 ),
-                title: Text(
-                  data['name'] ?? 'No Name',
-                  style: const TextStyle(
-                    fontWeight: FontWeight.w600,
-                    fontSize: 15,
+              );
+            }
+
+            return ListView.builder(
+              padding: const EdgeInsets.all(8),
+              itemCount: results.length,
+              itemBuilder: (context, index) {
+                var event = results[index];
+                var data = event.data() as Map<String, dynamic>;
+
+                return Card(
+                  margin: const EdgeInsets.symmetric(
+                    vertical: 6,
+                    horizontal: 8,
                   ),
-                ),
-                subtitle: Text(
-                  data['description'] ?? '',
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(fontSize: 13),
-                ),
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => EventDetailScreen(
-                        isOrganizer: isOrganizer,
-                        eventDoc: event,
-                        joinLeaveService: EventActionService(),
+                  elevation: 2,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: ListTile(
+                    contentPadding: const EdgeInsets.all(12),
+                    leading: Container(
+                      width: 50,
+                      height: 50,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(8),
+                        color: const Color.fromRGBO(102, 126, 234, 0.1),
+                      ),
+                      child: const Icon(
+                        Icons.event,
+                        color: Color.fromRGBO(102, 126, 234, 1.0),
                       ),
                     ),
-                  );
-                },
-              ),
-            var data = event.data() as Map<String, dynamic>;
-
-            return Card(
-              margin: const EdgeInsets.symmetric(vertical: 6, horizontal: 8),
-              elevation: 2,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: ListTile(
-                contentPadding: const EdgeInsets.all(12),
-                leading: Container(
-                  width: 50,
-                  height: 50,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(8),
-                    color: const Color.fromRGBO(102, 126, 234, 0.1),
-                  ),
-                  child: const Icon(
-                    Icons.event,
-                    color: Color.fromRGBO(102, 126, 234, 1.0),
-                  ),
-                ),
-                title: Text(
-                  data['name'] ?? 'No Name',
-                  style: const TextStyle(
-                    fontWeight: FontWeight.w600,
-                    fontSize: 15,
-                  ),
-                ),
-                subtitle: Text(
-                  data['description'] ?? '',
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(fontSize: 13),
-                ),
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => EventDetailScreen(
-                        isOrganizer: isOrganizer,
-                        eventDoc: event,
-                        joinLeaveService: EventActionService(),
+                    title: Text(
+                      data['name'] ?? 'No Name',
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 15,
                       ),
                     ),
-                  );
-                },
-              ),
+                    subtitle: Text(
+                      data['description'] ?? '',
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(fontSize: 13),
+                    ),
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => EventDetailScreen(
+                            isOrganizer: isOrganizer,
+                            eventDoc: event,
+                            joinLeaveService: EventActionService(),
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                );
+              },
             );
           },
+          loading: () => const Center(
+            child: CircularProgressIndicator(
+              color: Color.fromRGBO(102, 126, 234, 1.0),
+            ),
+          ),
+          error: (error, stack) => Center(
+            child: Text(
+              'Error: ${error.toString()}',
+              style: const TextStyle(color: Colors.red),
+            ),
+          ),
         );
       },
     );
@@ -345,164 +303,95 @@ class CustomSearchDelegate extends SearchDelegate {
       );
     }
 
-    if (query.isEmpty) {
-      return const Center(
-        child: Text(
-          'Type to search events...',
-          style: TextStyle(
-            fontSize: 16,
-            color: Color.fromRGBO(113, 128, 150, 1.0),
-          ),
-        ),
-      );
-    }
+    return Consumer(
+      builder: (context, ref, child) {
+        final searchResults = ref.watch(eventSearchProvider(query));
 
-    return FutureBuilder<QuerySnapshot>(
-      future: _firestore
-          .collection('events')
-          .where('name', isGreaterThanOrEqualTo: query)
-          .where('name', isLessThanOrEqualTo: '$query\uf8ff')
-          .get(),
-      builder: (context, snapshot) {
-        if (!snapshot.hasData) {
-          return const Center(
-            child: CircularProgressIndicator(
-              color: Color.fromRGBO(102, 126, 234, 1.0),
-            ),
-          );
-          return const Center(
-            child: CircularProgressIndicator(
-              color: Color.fromRGBO(102, 126, 234, 1.0),
-            ),
-          );
-        }
-
-        var results = snapshot.data!.docs;
-        if (results.isEmpty) {
-          return const Center(
-            child: Text(
-              'No matching events found.',
-              style: TextStyle(
-                fontSize: 16,
-                color: Color.fromRGBO(113, 128, 150, 1.0),
-              ),
-            ),
-          );
-          return const Center(
-            child: Text(
-              'No matching events found.',
-              style: TextStyle(
-                fontSize: 16,
-                color: Color.fromRGBO(113, 128, 150, 1.0),
-              ),
-            ),
-          );
-        }
-
-        return ListView.builder(
-          padding: const EdgeInsets.all(8),
-          padding: const EdgeInsets.all(8),
-          itemCount: results.length,
-          itemBuilder: (context, index) {
-            var event = results[index];
-            var data = event.data() as Map<String, dynamic>;
-
-            return Card(
-              margin: const EdgeInsets.symmetric(vertical: 6, horizontal: 8),
-              elevation: 2,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: ListTile(
-                contentPadding: const EdgeInsets.all(12),
-                leading: Container(
-                  width: 50,
-                  height: 50,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(8),
-                    color: const Color.fromRGBO(102, 126, 234, 0.1),
-                  ),
-                  child: const Icon(
-                    Icons.event,
-                    color: Color.fromRGBO(102, 126, 234, 1.0),
+        return searchResults.when(
+          data: (results) {
+            if (results.isEmpty) {
+              return const Center(
+                child: Text(
+                  'No matching events found.',
+                  style: TextStyle(
+                    fontSize: 16,
+                    color: Color.fromRGBO(113, 128, 150, 1.0),
                   ),
                 ),
-                title: Text(
-                  data['name'] ?? 'No Name',
-                  style: const TextStyle(
-                    fontWeight: FontWeight.w600,
-                    fontSize: 15,
+              );
+            }
+
+            return ListView.builder(
+              padding: const EdgeInsets.all(8),
+              itemCount: results.length,
+              itemBuilder: (context, index) {
+                var event = results[index];
+                var data = event.data() as Map<String, dynamic>;
+
+                return Card(
+                  margin: const EdgeInsets.symmetric(
+                    vertical: 6,
+                    horizontal: 8,
                   ),
-                ),
-                subtitle: Text(
-                  data['description'] ?? '',
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(fontSize: 13),
-                ),
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => EventDetailScreen(
-                        isOrganizer: isOrganizer,
-                        eventDoc: event,
-                        joinLeaveService: EventActionService(),
+                  elevation: 2,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: ListTile(
+                    contentPadding: const EdgeInsets.all(12),
+                    leading: Container(
+                      width: 50,
+                      height: 50,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(8),
+                        color: const Color.fromRGBO(102, 126, 234, 0.1),
+                      ),
+                      child: const Icon(
+                        Icons.event,
+                        color: Color.fromRGBO(102, 126, 234, 1.0),
                       ),
                     ),
-                  );
-                },
-              ),
-            var data = event.data() as Map<String, dynamic>;
-
-            return Card(
-              margin: const EdgeInsets.symmetric(vertical: 6, horizontal: 8),
-              elevation: 2,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: ListTile(
-                contentPadding: const EdgeInsets.all(12),
-                leading: Container(
-                  width: 50,
-                  height: 50,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(8),
-                    color: const Color.fromRGBO(102, 126, 234, 0.1),
-                  ),
-                  child: const Icon(
-                    Icons.event,
-                    color: Color.fromRGBO(102, 126, 234, 1.0),
-                  ),
-                ),
-                title: Text(
-                  data['name'] ?? 'No Name',
-                  style: const TextStyle(
-                    fontWeight: FontWeight.w600,
-                    fontSize: 15,
-                  ),
-                ),
-                subtitle: Text(
-                  data['description'] ?? '',
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(fontSize: 13),
-                ),
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => EventDetailScreen(
-                        isOrganizer: isOrganizer,
-                        eventDoc: event,
-                        joinLeaveService: EventActionService(),
+                    title: Text(
+                      data['name'] ?? 'No Name',
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 15,
                       ),
                     ),
-                  );
-                },
-              ),
+                    subtitle: Text(
+                      data['description'] ?? '',
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(fontSize: 13),
+                    ),
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => EventDetailScreen(
+                            isOrganizer: isOrganizer,
+                            eventDoc: event,
+                            joinLeaveService: EventActionService(),
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                );
+              },
             );
           },
+          loading: () => const Center(
+            child: CircularProgressIndicator(
+              color: Color.fromRGBO(102, 126, 234, 1.0),
+            ),
+          ),
+          error: (error, stack) => Center(
+            child: Text(
+              'Error: ${error.toString()}',
+              style: const TextStyle(color: Colors.red),
+            ),
+          ),
         );
       },
     );
@@ -518,5 +407,14 @@ class CustomSearchDelegate extends SearchDelegate {
     } catch (e) {
       return const Icon(Icons.error);
     }
+  }
+}
+
+extension SearchExtension on WidgetRef {
+  void showEventSearch(BuildContext context, bool? isOrganizer) {
+    showSearch(
+      context: context,
+      delegate: CustomSearchDelegate(ref: this, isOrganizer: isOrganizer),
+    );
   }
 }
