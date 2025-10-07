@@ -1,18 +1,97 @@
 import 'package:event_buddy/screens/role_screen.dart';
+import 'package:event_buddy/theme/app_colors.dart';
 import 'package:event_buddy/widgets/custom_text_field.dart';
 import 'package:event_buddy/services/auth_service.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/legacy.dart';
 import 'package:flutter_svg/svg.dart';
 import 'login_screen.dart';
 
-class RegisterScreen extends StatefulWidget {
-  const RegisterScreen({super.key});
-  @override
-  State<RegisterScreen> createState() => _RegisterScreenState();
+final authServiceProvider = Provider<AuthService>((ref) {
+  return AuthService();
+});
+
+
+class RegistrationController extends ChangeNotifier {
+  final AuthService _authService;
+
+  RegistrationController(this._authService);
+
+  bool _isLoading = false;
+  bool _obscurePassword = true;
+  bool _obscureConfirmPassword = true;
+
+  bool get isLoading => _isLoading;
+  bool get obscurePassword => _obscurePassword;
+  bool get obscureConfirmPassword => _obscureConfirmPassword;
+
+  void togglePasswordVisibility() {
+    _obscurePassword = !_obscurePassword;
+    notifyListeners(); 
+  }
+
+  void toggleConfirmPasswordVisibility() {
+    _obscureConfirmPassword = !_obscureConfirmPassword;
+    notifyListeners();
+  }
+
+  
+  Future<void> registerUser({
+    required String firstName,
+    required String lastName,
+    required String email,
+    required String password,
+    required String dob,
+    required BuildContext context,
+  }) async {
+    _isLoading = true;
+    notifyListeners();
+
+    try {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (context) => RoleSelectionScreen(
+            firstName: firstName.trim(),
+            lastName: lastName.trim(),
+            email: email.trim(),
+            password: password.trim(),
+            dob: dob.trim(),
+          ),
+        ),
+      );
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(e.toString())));
+      }
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
 }
 
-class _RegisterScreenState extends State<RegisterScreen> {
+final registrationControllerProvider =
+    ChangeNotifierProvider<RegistrationController>((ref) {
+      return RegistrationController(
+        ref.watch(authServiceProvider),
+      );
+    });
+
+
+class RegisterScreen extends ConsumerStatefulWidget {
+  const RegisterScreen({super.key});
+
+  @override
+  ConsumerState<RegisterScreen> createState() => _RegisterScreenState();
+}
+
+// State<RegisterScreen> → ConsumerState<RegisterScreen>
+class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   final _formKey = GlobalKey<FormState>();
   final TextEditingController _firstNameController = TextEditingController();
   final TextEditingController _lastNameController = TextEditingController();
@@ -21,12 +100,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final TextEditingController _confirmPasswordController =
       TextEditingController();
   final TextEditingController _dobController = TextEditingController();
-
-  final AuthService _authService = AuthService();
-
-  bool _obscurePassword = true;
-  bool _obscureConfirmPassword = true;
-  bool _loading = false;
 
   @override
   void dispose() {
@@ -42,34 +115,25 @@ class _RegisterScreenState extends State<RegisterScreen> {
   Future<void> _registerUser() async {
     if (!_formKey.currentState!.validate()) return;
 
-    setState(() => _loading = true);
-
-    try {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(
-          builder: (context) => RoleSelectionScreen(
-            firstName: _firstNameController.text.trim(),
-            lastName: _lastNameController.text.trim(),
-            email: _emailController.text.trim(),
-            password: _passwordController.text.trim(),
-            dob: _dobController.text.trim(),
-          ),
-        ),
-      );
-    } catch (e) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(e.toString())));
-    } finally {
-      setState(() => _loading = false);
-    }
+    await ref
+        .read(registrationControllerProvider)
+        .registerUser(
+          firstName: _firstNameController.text,
+          lastName: _lastNameController.text,
+          email: _emailController.text,
+          password: _passwordController.text,
+          dob: _dobController.text,
+          context: context,
+        );
   }
 
   @override
   Widget build(BuildContext context) {
+   
+    final controller = ref.watch(registrationControllerProvider);
+
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.card,
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 36),
@@ -87,14 +151,22 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 const SizedBox(height: 20),
                 const Text(
                   "Register",
-                  style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
+                  style: TextStyle(
+                    fontSize: 28,
+                    fontWeight: FontWeight.bold,
+                    color: Color.fromARGB(255, 247, 247, 247),
+                  ),
                 ),
                 const SizedBox(height: 8),
                 const Text(
                   "Please register to log in",
-                  style: TextStyle(fontSize: 16, color: Colors.grey),
+                  style: TextStyle(
+                    fontSize: 16,
+                    color: Color.fromARGB(255, 247, 247, 247),
+                  ),
                 ),
                 const SizedBox(height: 24),
+
                 CustomTextField(
                   controller: _firstNameController,
                   hintText: "First name",
@@ -104,6 +176,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       : null,
                 ),
                 const SizedBox(height: 16),
+
                 CustomTextField(
                   controller: _lastNameController,
                   hintText: "Last name",
@@ -113,6 +186,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       : null,
                 ),
                 const SizedBox(height: 16),
+
                 CustomTextField(
                   controller: _emailController,
                   hintText: "Email address",
@@ -133,6 +207,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   },
                 ),
                 const SizedBox(height: 16),
+
                 CustomTextField(
                   controller: _dobController,
                   hintText: "Date of Birth",
@@ -160,20 +235,22 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       : null,
                 ),
                 const SizedBox(height: 16),
+
                 CustomTextField(
                   controller: _passwordController,
                   hintText: "Password",
                   prefixIcon: Icons.lock_outline,
-                  obscureText: _obscurePassword,
+                  obscureText: controller.obscurePassword, 
                   suffixIcon: IconButton(
                     icon: Icon(
-                      _obscurePassword
+                      controller
+                              .obscurePassword 
                           ? Icons.visibility_off
                           : Icons.visibility,
                     ),
-                    onPressed: () => setState(() {
-                      _obscurePassword = !_obscurePassword;
-                    }),
+                    onPressed: () {
+                      controller.togglePasswordVisibility();
+                    },
                   ),
                   validator: (value) {
                     if (value == null || value.isEmpty) {
@@ -186,20 +263,23 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   },
                 ),
                 const SizedBox(height: 16),
+
                 CustomTextField(
                   controller: _confirmPasswordController,
                   hintText: "Confirm password",
                   prefixIcon: Icons.lock_outline,
-                  obscureText: _obscureConfirmPassword,
+                  obscureText:
+                      controller.obscureConfirmPassword, 
                   suffixIcon: IconButton(
                     icon: Icon(
-                      _obscureConfirmPassword
+                      controller
+                              .obscureConfirmPassword 
                           ? Icons.visibility_off
                           : Icons.visibility,
                     ),
-                    onPressed: () => setState(() {
-                      _obscureConfirmPassword = !_obscureConfirmPassword;
-                    }),
+                    onPressed: () {
+                      controller.toggleConfirmPasswordVisibility();
+                    },
                   ),
                   validator: (value) {
                     if (value == null || value.isEmpty) {
@@ -212,19 +292,22 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   },
                 ),
                 const SizedBox(height: 24),
+
                 SizedBox(
                   width: double.infinity,
                   height: 50,
                   child: ElevatedButton(
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Color.fromARGB(255, 53, 137, 158),
+                      backgroundColor: const Color.fromARGB(255, 53, 137, 158),
                       foregroundColor: Colors.white,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(30),
                       ),
                     ),
                     onPressed: _registerUser,
-                    child: _loading
+                    child:
+                        controller
+                            .isLoading 
                         ? const CircularProgressIndicator(color: Colors.white)
                         : const Text(
                             "Register now",
@@ -233,6 +316,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   ),
                 ),
                 const SizedBox(height: 16),
+
                 Center(
                   child: RichText(
                     text: TextSpan(

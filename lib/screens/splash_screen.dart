@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:developer';
 import 'package:event_buddy/screens/Login_screen.dart';
+import 'package:event_buddy/theme/app_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:video_player/video_player.dart';
@@ -83,7 +84,7 @@ class _SplashScreenState extends State<SplashScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Color.fromARGB(255, 14, 12, 12),
+      backgroundColor: AppColors.card,
       body: Center(
         child: _isVideoInitialized && _videoController != null && !_hasError
             ? Column(

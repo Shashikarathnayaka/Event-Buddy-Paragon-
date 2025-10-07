@@ -2,6 +2,7 @@ import 'dart:io';
 import 'dart:convert';
 import 'dart:typed_data';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:event_buddy/theme/app_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
@@ -142,7 +143,7 @@ class _EventEditScreenState extends State<EventEditScreen> {
           ),
         ),
         iconTheme: const IconThemeData(color: Colors.white),
-        backgroundColor: const Color.fromARGB(255, 53, 137, 158),
+        backgroundColor: AppColors.card,
         centerTitle: true,
       ),
       body: Padding(
@@ -182,7 +183,7 @@ class _EventEditScreenState extends State<EventEditScreen> {
                   hintStyle: const TextStyle(color: Colors.grey),
                   prefixIcon: const Icon(Icons.celebration),
                   filled: true,
-                  fillColor: const Color(0xFFF5F5F5),
+                  fillColor: const Color.fromARGB(255, 8, 8, 8),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
                     borderSide: const BorderSide(
@@ -208,7 +209,7 @@ class _EventEditScreenState extends State<EventEditScreen> {
                   hintStyle: const TextStyle(color: Colors.grey),
                   prefixIcon: const Icon(Icons.date_range),
                   filled: true,
-                  fillColor: Color(0xFFF5F5F5),
+                  fillColor: const Color.fromARGB(255, 8, 8, 8),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
                     borderSide: const BorderSide(
@@ -245,7 +246,7 @@ class _EventEditScreenState extends State<EventEditScreen> {
                   hintStyle: const TextStyle(color: Colors.grey),
                   prefixIcon: const Icon(Icons.location_city),
                   filled: true,
-                  fillColor: Colors.grey[100],
+                  fillColor: const Color.fromARGB(255, 8, 8, 8),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
                     borderSide: const BorderSide(
@@ -271,7 +272,7 @@ class _EventEditScreenState extends State<EventEditScreen> {
                   hintStyle: const TextStyle(color: Colors.grey),
                   prefixIcon: const Icon(Icons.description),
                   filled: true,
-                  fillColor: Colors.grey.shade100,
+                  fillColor: const Color.fromARGB(255, 8, 8, 8),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
                     borderSide: const BorderSide(
@@ -287,7 +288,7 @@ class _EventEditScreenState extends State<EventEditScreen> {
               const SizedBox(height: 20),
               ElevatedButton(
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color.fromARGB(255, 43, 203, 158),
+                  backgroundColor: const Color.fromARGB(255, 18, 19, 19),
                   foregroundColor: Colors.white,
                 ),
                 onPressed: _updateEvent,
