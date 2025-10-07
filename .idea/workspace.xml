@@ -5,31 +5,7 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="ec8f15c1-69da-42ab-86ae-cc65cb9f3e5e" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/.flutter-plugins-dependencies" beforeDir="false" afterPath="$PROJECT_DIR$/.flutter-plugins-dependencies" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/libraries/Dart_SDK.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/libraries/Dart_SDK.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/event_buddy.iml" beforeDir="false" afterPath="$PROJECT_DIR$/event_buddy.iml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/lib/main.dart" beforeDir="false" afterPath="$PROJECT_DIR$/lib/main.dart" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/lib/screens/Login_screen.dart" beforeDir="false" afterPath="$PROJECT_DIR$/lib/screens/Login_screen.dart" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/lib/screens/add_event_screen.dart" beforeDir="false" afterPath="$PROJECT_DIR$/lib/screens/add_event_screen.dart" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/lib/screens/event_detail_screen.dart" beforeDir="false" afterPath="$PROJECT_DIR$/lib/screens/event_detail_screen.dart" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/lib/screens/my_events_content.dart" beforeDir="false" afterPath="$PROJECT_DIR$/lib/screens/my_events_content.dart" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/lib/screens/profile_screen.dart" beforeDir="false" afterPath="$PROJECT_DIR$/lib/screens/profile_screen.dart" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/lib/screens/role_screen.dart" beforeDir="false" afterPath="$PROJECT_DIR$/lib/screens/role_screen.dart" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/lib/screens/splash_screen.dart" beforeDir="false" afterPath="$PROJECT_DIR$/lib/screens/splash_screen.dart" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/lib/services/auth_service.dart" beforeDir="false" afterPath="$PROJECT_DIR$/lib/services/auth_service.dart" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/lib/services/event_service.dart" beforeDir="false" afterPath="$PROJECT_DIR$/lib/services/event_service.dart" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/lib/services/notification_trigger_service.dart" beforeDir="false" afterPath="$PROJECT_DIR$/lib/services/notification_trigger_service.dart" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/lib/services/push_notification_service.dart" beforeDir="false" afterPath="$PROJECT_DIR$/lib/services/push_notification_service.dart" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/lib/wrapper/wrapper.dart" beforeDir="false" afterPath="$PROJECT_DIR$/lib/wrapper/wrapper.dart" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/linux/flutter/generated_plugin_registrant.cc" beforeDir="false" afterPath="$PROJECT_DIR$/linux/flutter/generated_plugin_registrant.cc" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/linux/flutter/generated_plugin_registrant.h" beforeDir="false" afterPath="$PROJECT_DIR$/linux/flutter/generated_plugin_registrant.h" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/linux/flutter/generated_plugins.cmake" beforeDir="false" afterPath="$PROJECT_DIR$/linux/flutter/generated_plugins.cmake" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/macos/Flutter/GeneratedPluginRegistrant.swift" beforeDir="false" afterPath="$PROJECT_DIR$/macos/Flutter/GeneratedPluginRegistrant.swift" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/pubspec.yaml" beforeDir="false" afterPath="$PROJECT_DIR$/pubspec.yaml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/windows/flutter/generated_plugin_registrant.cc" beforeDir="false" afterPath="$PROJECT_DIR$/windows/flutter/generated_plugin_registrant.cc" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/windows/flutter/generated_plugin_registrant.h" beforeDir="false" afterPath="$PROJECT_DIR$/windows/flutter/generated_plugin_registrant.h" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/windows/flutter/generated_plugins.cmake" beforeDir="false" afterPath="$PROJECT_DIR$/windows/flutter/generated_plugins.cmake" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -82,7 +58,7 @@
     "cf.first.check.clang-format": "false",
     "cidr.known.project.marker": "true",
     "dart.analysis.tool.window.visible": "false",
-    "git-widget-placeholder": "main",
+    "git-widget-placeholder": "event-buddy",
     "io.flutter.reload.alreadyRun": "true",
     "settings.editor.selected.configurable": "terminal",
     "show.migrate.to.gradle.popup": "false"

@@ -42,6 +42,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final eventActionService = ref.read(eventActionServiceProvider);
 
     return Scaffold(
+      backgroundColor: const Color.fromRGBO(247, 250, 252, 1.0),
+
       appBar: AppBar(
         title: const Text("Home"),
         leading: widget.isOrganizer == true
@@ -80,6 +82,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           final events = snapshot.docs;
 
           return ListView.builder(
+            padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
             itemCount: events.length,
             itemBuilder: (context, index) {
               final event = events[index];

@@ -102,6 +102,7 @@ class CustomSearchDelegate extends SearchDelegate {
     return theme.copyWith(
       appBarTheme: const AppBarTheme(
         backgroundColor: Color.fromRGBO(102, 126, 234, 1.0),
+        backgroundColor: Color.fromRGBO(102, 126, 234, 1.0),
         elevation: 0,
         iconTheme: IconThemeData(color: Colors.white),
       ),
@@ -118,8 +119,13 @@ class CustomSearchDelegate extends SearchDelegate {
         filled: true,
         // ignore: deprecated_member_use
         fillColor: Colors.white.withOpacity(0.2),
+        // ignore: deprecated_member_use
+        fillColor: Colors.white.withOpacity(0.2),
         contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 6),
         constraints: BoxConstraints(maxWidth: double.infinity, minHeight: 40),
+      ),
+      textTheme: theme.textTheme.copyWith(
+        titleLarge: const TextStyle(color: Colors.white, fontSize: 18),
       ),
       textTheme: theme.textTheme.copyWith(
         titleLarge: const TextStyle(color: Colors.white, fontSize: 18),
@@ -162,6 +168,15 @@ class CustomSearchDelegate extends SearchDelegate {
           ),
         ),
       );
+      return const Center(
+        child: Text(
+          'Search events...',
+          style: TextStyle(
+            fontSize: 16,
+            color: Color.fromRGBO(113, 128, 150, 1.0),
+          ),
+        ),
+      );
     }
     return FutureBuilder<QuerySnapshot>(
       future: _firestore
@@ -171,6 +186,11 @@ class CustomSearchDelegate extends SearchDelegate {
           .get(),
       builder: (context, snapshot) {
         if (!snapshot.hasData) {
+          return const Center(
+            child: CircularProgressIndicator(
+              color: Color.fromRGBO(102, 126, 234, 1.0),
+            ),
+          );
           return const Center(
             child: CircularProgressIndicator(
               color: Color.fromRGBO(102, 126, 234, 1.0),
@@ -190,12 +210,72 @@ class CustomSearchDelegate extends SearchDelegate {
             ),
           );
         }
+        if (results.isEmpty) {
+          return const Center(
+            child: Text(
+              'No events found.',
+              style: TextStyle(
+                fontSize: 16,
+                color: Color.fromRGBO(113, 128, 150, 1.0),
+              ),
+            ),
+          );
+        }
 
         return ListView.builder(
+          padding: const EdgeInsets.all(8),
           padding: const EdgeInsets.all(8),
           itemCount: results.length,
           itemBuilder: (context, index) {
             var event = results[index];
+            var data = event.data() as Map<String, dynamic>;
+
+            return Card(
+              margin: const EdgeInsets.symmetric(vertical: 6, horizontal: 8),
+              elevation: 2,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: ListTile(
+                contentPadding: const EdgeInsets.all(12),
+                leading: Container(
+                  width: 50,
+                  height: 50,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(8),
+                    color: const Color.fromRGBO(102, 126, 234, 0.1),
+                  ),
+                  child: const Icon(
+                    Icons.event,
+                    color: Color.fromRGBO(102, 126, 234, 1.0),
+                  ),
+                ),
+                title: Text(
+                  data['name'] ?? 'No Name',
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 15,
+                  ),
+                ),
+                subtitle: Text(
+                  data['description'] ?? '',
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(fontSize: 13),
+                ),
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => EventDetailScreen(
+                        isOrganizer: isOrganizer,
+                        eventDoc: event,
+                        joinLeaveService: EventActionService(),
+                      ),
+                    ),
+                  );
+                },
+              ),
             var data = event.data() as Map<String, dynamic>;
 
             return Card(
@@ -265,6 +345,18 @@ class CustomSearchDelegate extends SearchDelegate {
       );
     }
 
+    if (query.isEmpty) {
+      return const Center(
+        child: Text(
+          'Type to search events...',
+          style: TextStyle(
+            fontSize: 16,
+            color: Color.fromRGBO(113, 128, 150, 1.0),
+          ),
+        ),
+      );
+    }
+
     return FutureBuilder<QuerySnapshot>(
       future: _firestore
           .collection('events')
@@ -273,6 +365,11 @@ class CustomSearchDelegate extends SearchDelegate {
           .get(),
       builder: (context, snapshot) {
         if (!snapshot.hasData) {
+          return const Center(
+            child: CircularProgressIndicator(
+              color: Color.fromRGBO(102, 126, 234, 1.0),
+            ),
+          );
           return const Center(
             child: CircularProgressIndicator(
               color: Color.fromRGBO(102, 126, 234, 1.0),
@@ -291,13 +388,71 @@ class CustomSearchDelegate extends SearchDelegate {
               ),
             ),
           );
+          return const Center(
+            child: Text(
+              'No matching events found.',
+              style: TextStyle(
+                fontSize: 16,
+                color: Color.fromRGBO(113, 128, 150, 1.0),
+              ),
+            ),
+          );
         }
 
         return ListView.builder(
           padding: const EdgeInsets.all(8),
+          padding: const EdgeInsets.all(8),
           itemCount: results.length,
           itemBuilder: (context, index) {
             var event = results[index];
+            var data = event.data() as Map<String, dynamic>;
+
+            return Card(
+              margin: const EdgeInsets.symmetric(vertical: 6, horizontal: 8),
+              elevation: 2,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: ListTile(
+                contentPadding: const EdgeInsets.all(12),
+                leading: Container(
+                  width: 50,
+                  height: 50,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(8),
+                    color: const Color.fromRGBO(102, 126, 234, 0.1),
+                  ),
+                  child: const Icon(
+                    Icons.event,
+                    color: Color.fromRGBO(102, 126, 234, 1.0),
+                  ),
+                ),
+                title: Text(
+                  data['name'] ?? 'No Name',
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 15,
+                  ),
+                ),
+                subtitle: Text(
+                  data['description'] ?? '',
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(fontSize: 13),
+                ),
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => EventDetailScreen(
+                        isOrganizer: isOrganizer,
+                        eventDoc: event,
+                        joinLeaveService: EventActionService(),
+                      ),
+                    ),
+                  );
+                },
+              ),
             var data = event.data() as Map<String, dynamic>;
 
             return Card(

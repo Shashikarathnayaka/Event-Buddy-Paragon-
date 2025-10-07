@@ -16,15 +16,15 @@ final firestoreProvider = Provider<FirebaseFirestore>((ref) {
   return FirebaseFirestore.instance;
 });
 
-class MyEventsContent extends StatefulWidget {
+class MyEventsContent extends ConsumerStatefulWidget {
   final bool? isOrganizer;
   const MyEventsContent({super.key, required this.isOrganizer});
 
   @override
-  State<MyEventsContent> createState() => _MyEventsContentState();
+  ConsumerState<MyEventsContent> createState() => _MyEventsContentState();
 }
 
-class _MyEventsContentState extends State<MyEventsContent> {
+class _MyEventsContentState extends ConsumerState<MyEventsContent> {
   @override
   Widget build(BuildContext context) {
     final userId = FirebaseAuth.instance.currentUser!.uid;
