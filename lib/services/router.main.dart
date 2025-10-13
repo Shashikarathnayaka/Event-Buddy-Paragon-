@@ -24,22 +24,28 @@ final goRouterProvider = Provider<GoRouter>((ref) {
 
     routes: [
       GoRoute(
-        path: '/splash',
+        path: Routes.splash,
         name: 'splash',
         builder: (context, state) => const SplashScreen(),
       ),
 
       GoRoute(
-        path: '/auth',
-        name: 'auth',
+        path: Routes.login,
+        name: 'login',
         builder: (context, state) => const LoginScreen(),
-      ),
+),
 
       GoRoute(
-        path: '/home',
+        path: Routes.home,
         name: 'home',
         builder: (context, state) => const HomeScreen(isOrganizer: false),
       ),
+      GoRoute(
+        path: Routes.register,
+        name: 'register',
+        builder: (context, state) => const RegisterScreen(),
+      ),
+     
     ],
   );
 });
