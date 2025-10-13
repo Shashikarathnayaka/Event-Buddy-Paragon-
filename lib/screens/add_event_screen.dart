@@ -473,7 +473,7 @@ class _AddEventScreenState extends State<AddEventScreen> {
                       : null,
                 ),
                 const SizedBox(height: 28),
-
+ 
                 SizedBox(
                   width: double.infinity,
                   height: 55,

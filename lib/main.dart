@@ -66,8 +66,8 @@
 
 import 'dart:developer';
 import 'package:event_buddy/firebase_options.dart';
-import 'package:event_buddy/router.dart';
 import 'package:event_buddy/services/push_notification_service.dart';
+import 'package:event_buddy/services/router.dart';
 import 'package:event_buddy/theme/app_theme.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
