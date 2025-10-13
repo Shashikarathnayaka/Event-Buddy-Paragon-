@@ -7,6 +7,8 @@
 // import 'package:event_buddy/theme/app_colors.dart';
 // import 'package:flutter/material.dart';
 import 'package:event_buddy/screens/Login_screen.dart';
+import 'package:event_buddy/screens/register_screen.dart';
+import 'package:event_buddy/services/routes.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:event_buddy/screens/splash_screen.dart';
 import 'package:event_buddy/screens/home_screen.dart';
