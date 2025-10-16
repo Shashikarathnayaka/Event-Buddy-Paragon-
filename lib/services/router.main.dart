@@ -13,7 +13,11 @@ final goRouterProvider = Provider<GoRouter>((ref) {
     initialLocation: Routes.splash,
     redirect: (context, state) {
       final isLoggedIn = authState.value != null;
-      final isAuthRoute = state.uri.path == Routes.login;
+      // final isAuthRoute = state.uri.path == Routes.login;
+      final isAuthRoute =
+          state.uri.path == Routes.login ||
+          state.uri.path == Routes.register ||
+          state.uri.path == Routes.role;
       final isSplash = state.uri.path == Routes.splash;
 
       // Allow splash screen

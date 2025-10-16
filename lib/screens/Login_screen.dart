@@ -257,30 +257,55 @@ class _LoginPageState extends ConsumerState<LoginScreen> {
                   onPressed: controller.isLoading ? null : _signInWithGoogle,
                 ),
                 const SizedBox(height: 16),
-
                 Center(
-                  child: RichText(
-                    text: TextSpan(
-                      text: "Don't have account? ",
-                      style: const TextStyle(
-                        color: Color.fromARGB(255, 192, 183, 183),
-                      ),
-                      children: [
-                        TextSpan(
-                          text: "Sign Up",
-                          style: const TextStyle(
-                            color: Color.fromARGB(255, 65, 126, 231),
-                            fontWeight: FontWeight.bold,
+                  child: GestureDetector(
+                    onTap: () {
+                      context.push(
+                        Routes.register,
+                      ); // Changed from context.go()
+                    },
+                    child: Text.rich(
+                      TextSpan(
+                        text: "Don't have account? ",
+                        style: TextStyle(color: Colors.grey),
+                        children: [
+                          TextSpan(
+                            text: "Sign Up",
+                            style: TextStyle(
+                              color: Colors.blue,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
-                          recognizer: TapGestureRecognizer()
-                            ..onTap = () {
-                              context.push('/register');
-                            },
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
                 ),
+                // Center(
+                //   child: RichText(
+                //     text: TextSpan(
+                //       text: "Don't have account? ",
+                //       style: const TextStyle(
+                //         color: Color.fromARGB(255, 192, 183, 183),
+                //       ),
+                //       children: [
+                //         TextSpan(
+                //           text: "Sign Up",
+                //           style: const TextStyle(
+                //             color: Color.fromARGB(255, 65, 126, 231),
+                //             fontWeight: FontWeight.bold,
+                //           ),
+                //           recognizer: TapGestureRecognizer()
+                //             ..onTap = () {
+                //               // print("object");
+                //               context.go(Routes.register);
+                //               // context.push('/register');
+                //             },
+                //         ),
+                //       ],
+                //     ),
+                //   ),
+                // ),
               ],
             ),
           ),

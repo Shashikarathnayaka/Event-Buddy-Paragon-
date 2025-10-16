@@ -6,6 +6,7 @@ import 'package:event_buddy/screens/my_events_content.dart';
 import 'package:event_buddy/screens/navigation_screen.dart';
 import 'package:event_buddy/screens/profile_screen.dart';
 import 'package:event_buddy/screens/register_screen.dart';
+import 'package:event_buddy/screens/role_screen.dart';
 import 'package:event_buddy/screens/splash_screen.dart';
 import 'package:event_buddy/services/join_leave_event.dart';
 import 'package:event_buddy/services/routes.dart';
