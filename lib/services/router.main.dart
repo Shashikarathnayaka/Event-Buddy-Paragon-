@@ -1,72 +1,75 @@
 part of 'router.dart';
 
- final authStateProvider = StreamProvider<User?>((ref) {
-   return FirebaseAuth.instance.authStateChanges();
- });
+// Auth state provider -- check user already logged or not
+final authStateProvider = StreamProvider<User?>((ref) {
+  return FirebaseAuth.instance.authStateChanges();
+});
 
- final goRouterProvider = Provider<GoRouter>((ref) {
-   final authState = ref.watch(authStateProvider);
+// GoRouter provider
+final goRouterProvider = Provider<GoRouter>((ref) {
+  final authState = ref.watch(authStateProvider);
 
-   return GoRouter(
-     initialLocation: '/splash',
+  return GoRouter(
+    initialLocation: Routes.splash,
+    redirect: (context, state) {
+      final isLoggedIn = authState.value != null;
+      final isAuthRoute = state.uri.path == Routes.login;
+      final isSplash = state.uri.path == Routes.splash;
 
-     redirect: (context, state) {
-       final isLoggedIn = authState.value != null;
-       final isAuthRoute = state.uri.path == '/auth';
-       final isSplash = state.uri.path == '/splash';
+      // Allow splash screen
+      if (isSplash) return null;
 
-       if (isSplash) return null;
-       if (!isLoggedIn && !isAuthRoute) return '/auth';
-       if (isLoggedIn && isAuthRoute) return '/home';
+      // Redirect to login if not authenticated
+      if (!isLoggedIn && !isAuthRoute) return Routes.login;
 
-       return null;
-     },
+      // Redirect to home if already authenticated and trying to access slogin
+      if (isLoggedIn && isAuthRoute) return Routes.navigation;
 
-     routes: [
+      return null;
+    },
+    routes: [
       GoRoute(
         path: Routes.splash,
         name: 'splash',
         builder: (context, state) => const SplashScreen(),
       ),
-
       GoRoute(
         path: Routes.login,
         name: 'login',
         builder: (context, state) => const LoginScreen(),
-     ),
-
+      ),
+      GoRoute(
+        path: Routes.register,
+        name: 'register',
+        builder: (context, state) => const RegisterScreen(),
+      ),
       GoRoute(
         path: Routes.home,
         name: 'home',
         builder: (context, state) => const HomeScreen(isOrganizer: false),
       ),
       GoRoute(
-        path: '/register',
-        name: 'register',
-        builder: (context, state) => const RegisterScreen(),
-      ),
-      GoRoute(
         path: Routes.myEvents,
         name: 'myEvents',
-        builder: (context, state) => const MyEventsContent(isOrganizer: null,),
+        builder: (context, state) => const MyEventsContent(isOrganizer: null),
       ),
       GoRoute(
         path: Routes.addEvent,
         name: 'addEvent',
         builder: (context, state) {
-          final extra = state.extra as Map<String, dynamic>? ?? {};
-          final organizerId = extra['organizerId'] as String? ?? '';
+          final extra = state.extra as Map<String, dynamic>?;
+          final organizerId = extra?['organizerId'] as String? ?? '';
           return AddEventScreen(organizer: organizerId);
         },
       ),
-       GoRoute(
-        path: '/EventDetailScreen/:id',
+      GoRoute(
+        path: '${Routes.eventDetail}/:id',
         name: 'eventDetail',
         builder: (context, state) {
-          final extra = state.extra as Map<String, dynamic>? ?? {};
-          final event = extra['event'];
-          final isOrganizer = extra['isOrganizer'] ?? false;
+          final extra = state.extra as Map<String, dynamic>?;
           final eventId = state.pathParameters['id'] ?? '';
+          final event = extra?['event'];
+          final isOrganizer = extra?['isOrganizer'] as bool? ?? false;
 
           return EventDetailScreen(
             eventId: eventId,
@@ -78,19 +81,18 @@ part of 'router.dart';
       ),
       GoRoute(
         path: Routes.profile,
-        name: 'profile',    
+        name: 'profile',
         builder: (context, state) => const ProfileScreen(),
       ),
-      GoRoute( 
+      GoRoute(
         path: Routes.navigation,
-        name: 'navigation',   
+        name: 'navigation',
         builder: (context, state) {
           final user = FirebaseAuth.instance.currentUser;
           final userName = user?.displayName ?? '';
           return NavigationScreen(userName: userName);
         },
       ),
-
     ],
   );
 });
