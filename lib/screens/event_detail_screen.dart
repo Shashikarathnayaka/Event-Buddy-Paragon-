@@ -16,7 +16,7 @@ class EventDetailScreen extends StatefulWidget {
     super.key,
     required this.isOrganizer,
     required this.eventDoc,
-    required joinLeaveService,
+    required joinLeaveService, required eventId,
   });
 
   @override

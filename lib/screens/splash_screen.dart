@@ -1,10 +1,11 @@
 import 'dart:async';
 import 'dart:developer';
-import 'package:event_buddy/screens/Login_screen.dart';
+import 'package:event_buddy/services/routes.dart';
 import 'package:event_buddy/theme/app_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/legacy.dart';
+import 'package:go_router/go_router.dart';
 import 'package:video_player/video_player.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -148,10 +149,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
 
   void _navigateToLogin() {
     if (mounted) {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => const LoginScreen()),
-      );
+      context.go(Routes.login);
     }
   }
 
@@ -309,10 +307,7 @@ class SimpleSplashScreen extends ConsumerWidget {
 
     ref.listen<SplashState>(splashProvider, (previous, next) {
       if (next.shouldNavigate && context.mounted) {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (_) => const LoginScreen()),
-        );
+        context.go(Routes.login);
       }
     });
 

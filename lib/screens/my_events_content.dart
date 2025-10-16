@@ -1,13 +1,14 @@
 import 'dart:developer';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:event_buddy/screens/add_event_screen.dart';
-import 'package:event_buddy/screens/event_detail_screen.dart';
-import 'package:event_buddy/services/join_leave_event.dart';
+// import 'package:event_buddy/screens/event_detail_screen.dart';
+// import 'package:event_buddy/services/join_leave_event.dart';
+import 'package:event_buddy/services/routes.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
-// Optional: Create providers for Firebase instances if needed
 final firebaseAuthProvider = Provider<FirebaseAuth>((ref) {
   return FirebaseAuth.instance;
 });
@@ -379,15 +380,12 @@ class _MyEventsContentState extends ConsumerState<MyEventsContent> {
                   ),
                 ),
                 onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => EventDetailScreen(
-                        isOrganizer: widget.isOrganizer,
-                        eventDoc: event,
-                        joinLeaveService: EventActionService(),
-                      ),
-                    ),
+                  context.go(
+                    '${Routes.eventDetail}/${event.id}',
+                    extra: {
+                      'event': event,
+                      'isOrganizer': widget.isOrganizer ?? false,
+                    },
                   );
                 },
               );

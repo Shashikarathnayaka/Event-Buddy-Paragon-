@@ -1,6 +1,6 @@
-import 'package:event_buddy/screens/navigation_screen.dart';
+// import 'package:event_buddy/screens/navigation_screen.dart';
 import 'package:event_buddy/services/auth_service.dart';
-import 'package:event_buddy/screens/register_screen.dart';
+import 'package:event_buddy/services/routes.dart';
 import 'package:event_buddy/theme/app_colors.dart';
 import 'package:event_buddy/utils/core_utils.dart';
 import 'package:flutter/gestures.dart';
@@ -8,6 +8,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:go_router/go_router.dart';
 
 final authServiceProvider = Provider<AuthService>((ref) {
   return AuthService();
@@ -40,7 +41,7 @@ class LoginController extends ChangeNotifier {
       final result = await _authService.loginWithEmail(email, password);
       return result;
     } catch (e) {
-      rethrow; 
+      rethrow;
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -61,8 +62,6 @@ class LoginController extends ChangeNotifier {
     }
   }
 }
-
-
 
 final loginControllerProvider = ChangeNotifierProvider<LoginController>((ref) {
   return LoginController(ref.watch(authServiceProvider));
@@ -88,7 +87,6 @@ class _LoginPageState extends ConsumerState<LoginScreen> {
     super.dispose();
   }
 
-  
   Future<void> _loginUser() async {
     if (!_formKey.currentState!.validate()) return;
 
@@ -121,14 +119,11 @@ class _LoginPageState extends ConsumerState<LoginScreen> {
   }
 
   void _navigateHome(String role, String firstName) {
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(
-        builder: (context) => NavigationScreen(
-          userName: firstName,
-          isOrganizer: role == "Organizer" ? true : false,
-        ),
-      ),
+    final isOrganizer = role == "Organizer";
+
+    context.go(
+      Routes.navigation,
+      extra: {'userName': firstName, 'isOrganizer': isOrganizer},
     );
   }
 
@@ -208,13 +203,12 @@ class _LoginPageState extends ConsumerState<LoginScreen> {
 
                 TextFormField(
                   controller: _passwordController,
-                  obscureText: controller.obscurePassword, 
+                  obscureText: controller.obscurePassword,
                   decoration: _inputDecoration("Password", Icons.lock_outline)
                       .copyWith(
                         suffixIcon: IconButton(
                           icon: Icon(
-                            controller
-                                    .obscurePassword 
+                            controller.obscurePassword
                                 ? Icons.visibility_off
                                 : Icons.visibility,
                           ),
@@ -229,7 +223,6 @@ class _LoginPageState extends ConsumerState<LoginScreen> {
                 ),
                 const SizedBox(height: 24),
 
-                
                 ElevatedButton(
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color.fromARGB(255, 53, 137, 158),
@@ -239,12 +232,8 @@ class _LoginPageState extends ConsumerState<LoginScreen> {
                     ),
                     minimumSize: const Size(double.maxFinite, 48),
                   ),
-                  onPressed: controller.isLoading
-                      ? null
-                      : _loginUser, 
-                  child:
-                      controller
-                          .isLoading 
+                  onPressed: controller.isLoading ? null : _loginUser,
+                  child: controller.isLoading
                       ? const CircularProgressIndicator(color: Colors.white)
                       : const Text("SIGN IN"),
                 ),
@@ -265,9 +254,7 @@ class _LoginPageState extends ConsumerState<LoginScreen> {
                     height: 24,
                   ),
                   label: const Text("Sign in with Google"),
-                  onPressed: controller.isLoading
-                      ? null
-                      : _signInWithGoogle, 
+                  onPressed: controller.isLoading ? null : _signInWithGoogle,
                 ),
                 const SizedBox(height: 16),
 
@@ -287,12 +274,7 @@ class _LoginPageState extends ConsumerState<LoginScreen> {
                           ),
                           recognizer: TapGestureRecognizer()
                             ..onTap = () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => const RegisterScreen(),
-                                ),
-                              );
+                              context.push('/register');
                             },
                         ),
                       ],
