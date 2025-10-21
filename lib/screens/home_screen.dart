@@ -46,15 +46,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       backgroundColor: AppColors.card,
       appBar: AppBar(
         title: const Text("Home"),
-        leading: widget.isOrganizer == true
-            ? IconButton(
-                icon: const Icon(Icons.add),
-                onPressed: () {
-                  context.go(Routes.addEvent);
-                },
-              )
-            : null,
         actions: [
+          if (widget.isOrganizer == true)
+            IconButton(
+              icon: const Icon(Icons.add),
+              onPressed: () {
+                context.push(
+                  Routes.addEvent,
+                ); 
+              },
+            ),
           IconButton(
             icon: const Icon(Icons.search),
             onPressed: () {
