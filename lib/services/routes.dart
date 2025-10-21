@@ -9,4 +9,6 @@ class Routes {
   static const profile = '/profile';
   static const addEvent = '/addEvent';
   static const eventDetail = '/eventDetail';
+  static const eventEdit = '/eventEdit';
+  static const roleSelection = '/roleSelection';
 }

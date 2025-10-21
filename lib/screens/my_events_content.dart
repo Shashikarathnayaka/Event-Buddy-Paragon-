@@ -1,8 +1,5 @@
 import 'dart:developer';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:event_buddy/screens/add_event_screen.dart';
-// import 'package:event_buddy/screens/event_detail_screen.dart';
-// import 'package:event_buddy/services/join_leave_event.dart';
 import 'package:event_buddy/services/routes.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -37,11 +34,11 @@ class _MyEventsContentState extends ConsumerState<MyEventsContent> {
             ? IconButton(
                 icon: const Icon(Icons.add),
                 onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const AddEventScreen(organizer: ''),
-                    ),
+                  context.push(
+                    Routes.addEvent,
+                    extra: {
+                      'organizer': '', 
+                    },
                   );
                 },
               )

@@ -3,11 +3,12 @@ import 'dart:developer';
 import 'dart:typed_data';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:event_buddy/services/join_leave_event.dart';
+import 'package:event_buddy/services/routes.dart';
 import 'package:event_buddy/theme/app_colors.dart';
-import 'package:event_buddy/utils/edit_screen.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 class EventDetailScreen extends StatefulWidget {
   final bool? isOrganizer;
@@ -245,14 +246,12 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
                 IconButton(
                   icon: const Icon(Icons.edit, color: Colors.white),
                   onPressed: () async {
-                    final updated = await Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => EventEditScreen(
-                          eventDoc: widget.eventDoc,
-                          organizer: '',
-                        ),
-                      ),
+                    final updated = await context.push<bool>(
+                      Routes.eventEdit,
+                      extra: {
+                        'eventDoc': widget.eventDoc,
+                        'organizer': '', 
+                      },
                     );
 
                     if (updated == true && context.mounted) {

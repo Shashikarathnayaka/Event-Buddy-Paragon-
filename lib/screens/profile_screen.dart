@@ -3,15 +3,15 @@ import 'dart:developer';
 import 'dart:io';
 import 'dart:typed_data';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:event_buddy/screens/Login_screen.dart';
 import 'package:event_buddy/services/auth_service.dart';
+import 'package:event_buddy/services/routes.dart';
 import 'package:event_buddy/theme/app_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart';
+import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 
-// Providers
 final authServiceProvider = Provider<AuthService>((ref) => AuthService());
 
 final firestoreProvider = Provider<FirebaseFirestore>(
@@ -20,7 +20,6 @@ final firestoreProvider = Provider<FirebaseFirestore>(
 
 final imagePickerProvider = Provider<ImagePicker>((ref) => ImagePicker());
 
-// Profile Screen with simpler approach - using ChangeNotifier
 class ProfileController extends ChangeNotifier {
   final AuthService _authService;
   final FirebaseFirestore _firestore;
@@ -477,11 +476,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         _showSnackBar('Profile deleted successfully', Colors.green);
 
         if (mounted) {
-          Navigator.pushAndRemoveUntil(
-            context,
-            MaterialPageRoute(builder: (context) => const LoginScreen()),
-            (route) => false,
-          );
+          context.go(Routes.login);
         }
       } catch (e) {
         _showSnackBar('Error deleting profile: $e', Colors.red);
@@ -494,7 +489,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
 
     final controller = ref.read(profileControllerProvider);
 
-    // Update form data
     controller.updateFormField('firstName', _firstNameController.text);
     controller.updateFormField('lastName', _lastNameController.text);
     controller.updateFormField('email', _emailController.text);
@@ -809,13 +803,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               if (confirm == true) {
                 await authService.signOut();
                 if (context.mounted) {
-                  Navigator.pushAndRemoveUntil(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const LoginScreen(),
-                    ),
-                    (route) => false,
-                  );
+                  context.go(
+                    Routes.login,
+                  ); 
                 }
               }
             },

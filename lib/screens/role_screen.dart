@@ -1,5 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:event_buddy/screens/navigation_screen.dart';
+import 'package:event_buddy/services/routes.dart';
 import 'package:event_buddy/theme/app_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/legacy.dart';
@@ -7,6 +7,7 @@ import 'package:flutter_svg/svg.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:event_buddy/services/auth_service.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 enum UserRole { user, organizer }
 
@@ -210,7 +211,7 @@ class _RoleSelectionScreenState extends ConsumerState<RoleSelectionScreen> {
     });
   }
 
-  Future<void> _handleRoleSelection(UserRole role) async {
+Future<void> _handleRoleSelection(UserRole role) async {
     final regData = ref.read(registrationDataProvider);
     if (regData == null) return;
 
@@ -227,14 +228,12 @@ class _RoleSelectionScreenState extends ConsumerState<RoleSelectionScreen> {
           user?.email?.split('@')[0] ??
           "User";
 
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(
-          builder: (_) => NavigationScreen(
-            userName: userName,
-            isOrganizer: role == UserRole.organizer,
-          ),
-        ),
+      context.go(
+        Routes.navigation,
+        extra: {
+          'userName': userName,
+          'isOrganizer': role == UserRole.organizer,
+        },
       );
 
       ScaffoldMessenger.of(context).showSnackBar(

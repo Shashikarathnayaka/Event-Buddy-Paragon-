@@ -12,5 +12,9 @@ class AppColors {
   // Accent Colors
   static const accentRed = Color(0xFFE74C3C); // Advanced order red
   static const accentOrange = Color(0xFFF39C12); // Order In orange
-  static const accentBlue = Color(0xFF35899E); // Custom blue
+  static const accentBlue = Color(0xFF35899E);
+
+  static var primary;
+
+  static var inputBackground; // Custom blue
 }

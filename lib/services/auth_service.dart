@@ -1,10 +1,10 @@
 import 'dart:developer';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:event_buddy/screens/navigation_screen.dart';
-import 'package:event_buddy/screens/role_screen.dart';
+import 'package:event_buddy/services/routes.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 
 class AuthService {
@@ -341,16 +341,14 @@ class AuthService {
           .get();
 
       if (!userDoc.exists && !orgDoc.exists) {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            builder: (_) => RoleSelectionScreen(
-              firstName: user.displayName?.split(" ").first ?? "",
-              lastName: user.displayName?.split(" ").last ?? "",
-              email: user.email,
-              fromGoogle: true,
-            ),
-          ),
+        context.go(
+          Routes.roleSelection,
+          extra: {
+            'firstName': user.displayName?.split(" ").first ?? "",
+            'lastName': user.displayName?.split(" ").last ?? "",
+            'email': user.email,
+            'fromGoogle': true,
+          },
         );
       } else {
         final role = userDoc.exists ? userDoc['role'] : orgDoc['role'];
@@ -371,14 +369,9 @@ class AuthService {
           });
         }
 
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            builder: (_) => NavigationScreen(
-              userName: firstName,
-              isOrganizer: role == "Organizer",
-            ),
-          ),
+        context.go(
+          Routes.navigation,
+          extra: {'userName': firstName, 'isOrganizer': role == "Organizer"},
         );
       }
     } catch (e) {

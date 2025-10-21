@@ -1,4 +1,3 @@
-// import 'package:event_buddy/screens/navigation_screen.dart';
 import 'package:event_buddy/services/auth_service.dart';
 import 'package:event_buddy/services/routes.dart';
 import 'package:event_buddy/theme/app_colors.dart';
@@ -281,31 +280,29 @@ class _LoginPageState extends ConsumerState<LoginScreen> {
                     ),
                   ),
                 ),
-                // Center(
-                //   child: RichText(
-                //     text: TextSpan(
-                //       text: "Don't have account? ",
-                //       style: const TextStyle(
-                //         color: Color.fromARGB(255, 192, 183, 183),
-                //       ),
-                //       children: [
-                //         TextSpan(
-                //           text: "Sign Up",
-                //           style: const TextStyle(
-                //             color: Color.fromARGB(255, 65, 126, 231),
-                //             fontWeight: FontWeight.bold,
-                //           ),
-                //           recognizer: TapGestureRecognizer()
-                //             ..onTap = () {
-                //               // print("object");
-                //               context.go(Routes.register);
-                //               // context.push('/register');
-                //             },
-                //         ),
-                //       ],
-                //     ),
-                //   ),
-                // ),
+                Center(
+                  child: RichText(
+                    text: TextSpan(
+                      text: "Don't have account? ",
+                      style: const TextStyle(
+                        color: Color.fromARGB(255, 192, 183, 183),
+                      ),
+                      children: [
+                        TextSpan(
+                          text: "Sign Up",
+                          style: const TextStyle(
+                            color: Color.fromARGB(255, 65, 126, 231),
+                            fontWeight: FontWeight.bold,
+                          ),
+                          recognizer: TapGestureRecognizer()
+                            ..onTap = () {
+                              context.go(Routes.register);
+                            },
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
               ],
             ),
           ),

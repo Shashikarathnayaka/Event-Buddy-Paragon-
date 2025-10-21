@@ -10,6 +10,7 @@ import 'package:event_buddy/screens/role_screen.dart';
 import 'package:event_buddy/screens/splash_screen.dart';
 import 'package:event_buddy/services/join_leave_event.dart';
 import 'package:event_buddy/services/routes.dart';
+import 'package:event_buddy/utils/edit_screen.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';

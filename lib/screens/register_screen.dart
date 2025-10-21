@@ -1,4 +1,4 @@
-import 'package:event_buddy/screens/role_screen.dart';
+import 'package:event_buddy/services/routes.dart';
 import 'package:event_buddy/theme/app_colors.dart';
 import 'package:event_buddy/widgets/custom_text_field.dart';
 import 'package:event_buddy/services/auth_service.dart';
@@ -7,12 +7,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart';
 import 'package:flutter_svg/svg.dart';
-import 'login_screen.dart';
+import 'package:go_router/go_router.dart';
 
 final authServiceProvider = Provider<AuthService>((ref) {
   return AuthService();
 });
-
 
 class RegistrationController extends ChangeNotifier {
   final AuthService _authService;
@@ -29,7 +28,7 @@ class RegistrationController extends ChangeNotifier {
 
   void togglePasswordVisibility() {
     _obscurePassword = !_obscurePassword;
-    notifyListeners(); 
+    notifyListeners();
   }
 
   void toggleConfirmPasswordVisibility() {
@@ -37,7 +36,6 @@ class RegistrationController extends ChangeNotifier {
     notifyListeners();
   }
 
-  
   Future<void> registerUser({
     required String firstName,
     required String lastName,
@@ -50,17 +48,15 @@ class RegistrationController extends ChangeNotifier {
     notifyListeners();
 
     try {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(
-          builder: (context) => RoleSelectionScreen(
-            firstName: firstName.trim(),
-            lastName: lastName.trim(),
-            email: email.trim(),
-            password: password.trim(),
-            dob: dob.trim(),
-          ),
-        ),
+      context.replace(
+        Routes.roleSelection,
+        extra: {
+          firstName: firstName.trim(),
+          lastName: lastName.trim(),
+          email: email.trim(),
+          password: password.trim(),
+          dob: dob.trim(),
+        },
       );
     } catch (e) {
       if (context.mounted) {
@@ -77,11 +73,8 @@ class RegistrationController extends ChangeNotifier {
 
 final registrationControllerProvider =
     ChangeNotifierProvider<RegistrationController>((ref) {
-      return RegistrationController(
-        ref.watch(authServiceProvider),
-      );
+      return RegistrationController(ref.watch(authServiceProvider));
     });
-
 
 class RegisterScreen extends ConsumerStatefulWidget {
   const RegisterScreen({super.key});
@@ -129,7 +122,6 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
 
   @override
   Widget build(BuildContext context) {
-   
     final controller = ref.watch(registrationControllerProvider);
 
     return Scaffold(
@@ -240,11 +232,10 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                   controller: _passwordController,
                   hintText: "Password",
                   prefixIcon: Icons.lock_outline,
-                  obscureText: controller.obscurePassword, 
+                  obscureText: controller.obscurePassword,
                   suffixIcon: IconButton(
                     icon: Icon(
-                      controller
-                              .obscurePassword 
+                      controller.obscurePassword
                           ? Icons.visibility_off
                           : Icons.visibility,
                     ),
@@ -268,12 +259,10 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                   controller: _confirmPasswordController,
                   hintText: "Confirm password",
                   prefixIcon: Icons.lock_outline,
-                  obscureText:
-                      controller.obscureConfirmPassword, 
+                  obscureText: controller.obscureConfirmPassword,
                   suffixIcon: IconButton(
                     icon: Icon(
-                      controller
-                              .obscureConfirmPassword 
+                      controller.obscureConfirmPassword
                           ? Icons.visibility_off
                           : Icons.visibility,
                     ),
@@ -305,9 +294,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                       ),
                     ),
                     onPressed: _registerUser,
-                    child:
-                        controller
-                            .isLoading 
+                    child: controller.isLoading
                         ? const CircularProgressIndicator(color: Colors.white)
                         : const Text(
                             "Register now",
@@ -316,7 +303,6 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                   ),
                 ),
                 const SizedBox(height: 16),
-
                 Center(
                   child: RichText(
                     text: TextSpan(
@@ -331,12 +317,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                           ),
                           recognizer: TapGestureRecognizer()
                             ..onTap = () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => const LoginScreen(),
-                                ),
-                              );
+                              context.push(Routes.login);
                             },
                         ),
                       ],
