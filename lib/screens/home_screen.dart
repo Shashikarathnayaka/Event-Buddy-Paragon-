@@ -51,9 +51,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             IconButton(
               icon: const Icon(Icons.add),
               onPressed: () {
-                context.push(
-                  Routes.addEvent,
-                ); 
+                context.push(Routes.addEvent);
               },
             ),
           IconButton(

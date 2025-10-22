@@ -34,12 +34,7 @@ class _MyEventsContentState extends ConsumerState<MyEventsContent> {
             ? IconButton(
                 icon: const Icon(Icons.add),
                 onPressed: () {
-                  context.push(
-                    Routes.addEvent,
-                    extra: {
-                      'organizer': '', 
-                    },
-                  );
+                  context.push(Routes.addEvent, extra: {'organizer': ''});
                 },
               )
             : null,

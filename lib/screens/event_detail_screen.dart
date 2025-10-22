@@ -17,7 +17,8 @@ class EventDetailScreen extends StatefulWidget {
     super.key,
     required this.isOrganizer,
     required this.eventDoc,
-    required joinLeaveService, required eventId,
+    required joinLeaveService,
+    required eventId,
   });
 
   @override
@@ -237,21 +238,14 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
         ),
         iconTheme: const IconThemeData(color: Colors.white),
         backgroundColor: AppColors.card,
-        actions:
-            (widget.isOrganizer == true) &&
-                (isCreator ||
-                    data['organizer'] == null ||
-                    data['organizer'] == '')
+        actions: (widget.isOrganizer == true && isCreator)
             ? [
                 IconButton(
                   icon: const Icon(Icons.edit, color: Colors.white),
                   onPressed: () async {
                     final updated = await context.push<bool>(
                       Routes.eventEdit,
-                      extra: {
-                        'eventDoc': widget.eventDoc,
-                        'organizer': '', 
-                      },
+                      extra: {'eventDoc': widget.eventDoc, 'organizer': ''},
                     );
 
                     if (updated == true && context.mounted) {
@@ -427,7 +421,6 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
                     data['creator'],
               ),
               builder: (context, snapshot) {
-                debugPrint('=== ORGANIZER WIDGET DEBUG ===');
                 debugPrint('Connection state: ${snapshot.connectionState}');
                 debugPrint('Has data: ${snapshot.hasData}');
                 debugPrint('Snapshot data exists: ${snapshot.data?.exists}');

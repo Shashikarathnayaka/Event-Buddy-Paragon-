@@ -115,7 +115,7 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         name: 'addEvent',
         builder: (context, state) {
           final extra = state.extra as Map<String, dynamic>?;
-          final organizer = extra?['organizer'] ?? '';
+          final organizer = extra?['organizer'] ?? false;
           return AddEventScreen(organizer: organizer);
         },
       ),
