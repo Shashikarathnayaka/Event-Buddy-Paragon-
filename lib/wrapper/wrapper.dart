@@ -59,10 +59,6 @@
 //   }
 // }
 
-
-
-
-// lib/wrapper/wrapper.dart
 import 'dart:developer';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -95,14 +91,12 @@ class AuthGate extends StatelessWidget {
     return StreamBuilder<User?>(
       stream: FirebaseAuth.instance.authStateChanges(),
       builder: (context, snapshot) {
-        // Loading state
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Scaffold(
             body: Center(child: CircularProgressIndicator()),
           );
         }
 
-        // User not logged in
         if (!snapshot.hasData || snapshot.data == null) {
           log("User not authenticated");
 
@@ -117,18 +111,15 @@ class AuthGate extends StatelessWidget {
           );
         }
 
-        // User is logged in - fetch user data and navigate
         return FutureBuilder<Map<String, dynamic>?>(
           future: _getUserData(snapshot.data!),
           builder: (context, userSnapshot) {
-            // Loading user data
             if (userSnapshot.connectionState == ConnectionState.waiting) {
               return const Scaffold(
                 body: Center(child: CircularProgressIndicator()),
               );
             }
 
-            // Error or no data
             if (userSnapshot.hasError || !userSnapshot.hasData) {
               log("Error fetching user data or no data found");
 
@@ -143,11 +134,9 @@ class AuthGate extends StatelessWidget {
               );
             }
 
-            // Successfully got user data
             final userData = userSnapshot.data!;
             final isOrganizer = userData['isOrganizer'] as bool;
 
-            // Navigate to appropriate home screen
             WidgetsBinding.instance.addPostFrameCallback((_) {
               if (context.mounted) {
                 if (isOrganizer) {
