@@ -1,11 +1,9 @@
 part of 'router.dart';
 
-// Auth state provider -- check user already logged or not
 final authStateProvider = StreamProvider<User?>((ref) {
   return FirebaseAuth.instance.authStateChanges();
 });
 
-// GoRouter provider
 final goRouterProvider = Provider<GoRouter>((ref) {
   final authState = ref.watch(authStateProvider);
 
@@ -19,13 +17,10 @@ final goRouterProvider = Provider<GoRouter>((ref) {
           state.uri.path == Routes.roleSelection;
       final isSplash = state.uri.path == Routes.splash;
 
-      // Allow splash screen
       if (isSplash) return null;
 
-      // Redirect to login if not authenticated
       if (!isLoggedIn && !isAuthRoute) return Routes.login;
 
-      // Redirect to navigation if already authenticated and trying to access auth routes
       if (isLoggedIn && isAuthRoute) return Routes.navigation;
 
       return null;
@@ -120,9 +115,9 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         },
       ),
 
-      // Event Detail Route
+      // Event Detail Route - FIXED VERSION
       GoRoute(
-        path: '${Routes.eventDetail}/:id',
+        path: '/event/:id',
         name: 'eventDetail',
         builder: (context, state) {
           final extra = state.extra as Map<String, dynamic>?;
@@ -140,16 +135,6 @@ final goRouterProvider = Provider<GoRouter>((ref) {
       ),
 
       // Event Edit Route
-      // GoRoute(
-      //   path: Routes.eventEdit,
-      //   name: 'eventEdit',
-      //   builder: (context, state) {
-      //     final extra = state.extra as Map<String, dynamic>?;
-      //     final eventDoc = extra?['eventDoc'];
-      //     final organizer = extra?['organizer'] ?? '';
-      //     return EventEditScreen(eventDoc: eventDoc, organizer: organizer);
-      //   },
-      // ),
       GoRoute(
         path: Routes.eventEdit,
         name: 'eventEdit',

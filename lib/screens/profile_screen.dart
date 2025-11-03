@@ -430,7 +430,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   border: Border.all(color: Colors.red.shade200),
                 ),
                 child: const Text(
-                  '⚠️ This action cannot be undone!\n\n• Your profile data will be permanently deleted\n• You will be logged out immediately\n• All your information will be removed from the database',
+                  ' This action cannot be undone!\n\n• Your profile data will be permanently deleted\n• You will be logged out immediately\n• All your information will be removed from the database',
                   style: TextStyle(
                     fontSize: 14,
                     color: Colors.red,
@@ -573,7 +573,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   }
 
   Widget _buildProfileForm(ProfileController controller) {
-    // Sync controllers with state
     if (_firstNameController.text != controller.formData['firstName']) {
       _firstNameController.text = controller.formData['firstName'] ?? '';
     }

@@ -256,30 +256,6 @@ class _LoginPageState extends ConsumerState<LoginScreen> {
                   onPressed: controller.isLoading ? null : _signInWithGoogle,
                 ),
                 const SizedBox(height: 16),
-                // Center(
-                //   child: GestureDetector(
-                //     onTap: () {
-                //       context.push(
-                //         Routes.register,
-                //       ); // Changed from context.go()
-                //     },
-                //     child: Text.rich(
-                //       TextSpan(
-                //         text: "Don't have account? ",
-                //         style: TextStyle(color: Colors.grey),
-                //         children: [
-                //           TextSpan(
-                //             text: "Sign Up",
-                //             style: TextStyle(
-                //               color: Colors.blue,
-                //               fontWeight: FontWeight.bold,
-                //             ),
-                //           ),
-                //         ],
-                //       ),
-                //     ),
-                //   ),
-                // ),
                 Center(
                   child: RichText(
                     text: TextSpan(

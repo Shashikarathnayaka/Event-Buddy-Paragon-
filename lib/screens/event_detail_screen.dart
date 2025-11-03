@@ -36,7 +36,6 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
   bool _isEventCreator(Map<String, dynamic> eventData) {
     final currentUserId = _auth.currentUser?.uid;
 
-    // Check all possible organizer field names
     final eventOrganizerId =
         eventData['organizerId'] ??
         eventData['organizer'] ??
@@ -44,7 +43,6 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
         eventData['userId'] ??
         eventData['creator'];
 
-    debugPrint('=== IS CREATOR CHECK ===');
     debugPrint('Current User ID: $currentUserId');
     debugPrint('Event Organizer ID: $eventOrganizerId');
     debugPrint('All event data keys: ${eventData.keys.toList()}');
@@ -58,7 +56,6 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
   }
 
   Future<DocumentSnapshot?> _getOrganizer(String? organizerId) async {
-    debugPrint('=== GET ORGANIZER DEBUG ===');
     debugPrint('Organizer ID received: $organizerId');
 
     if (organizerId == null || organizerId.isEmpty) {
@@ -163,7 +160,6 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
           insetPadding: EdgeInsets.zero,
           child: Stack(
             children: [
-              // Background with image
               GestureDetector(
                 onTap: () => Navigator.of(context).pop(),
                 child: Container(
@@ -177,7 +173,6 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
                   ),
                 ),
               ),
-              // Close button - positioned absolutely on top
               SafeArea(
                 child: Align(
                   alignment: Alignment.topRight,
@@ -240,7 +235,6 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
     final userId = _auth.currentUser?.uid;
     final isCreator = _isEventCreator(data);
 
-    // Enhanced debug prints
     debugPrint('widget.isOrganizer: ${widget.isOrganizer}');
     debugPrint('isCreator: $isCreator');
     debugPrint('userId: $userId');

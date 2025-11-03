@@ -37,38 +37,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     PushNotificationService.subscribeToTopic('all');
   }
 
-  // @override
-  // Widget build(BuildContext context) {
-  //   final eventsAsyncValue = ref.watch(eventsStreamProvider);
-  //   //final eventActionService = ref.read(eventActionServiceProvider);
-
-  //   return Scaffold(
-  //     backgroundColor: AppColors.card,
-  //     appBar: AppBar(
-  //       title: const Text("Home"),
-  //       actions: [
-  //         if (widget.isOrganizer == true)
-  //           IconButton(
-  //             icon: const Icon(Icons.add),
-  //             onPressed: () {
-  //               context.push(Routes.addEvent);
-  //             },
-  //           ),
-  //         IconButton(
-  //           icon: const Icon(Icons.search),
-  //           onPressed: () {
-  //             showSearch(
-  //               context: context,
-  //               delegate: CustomSearchDelegate(
-  //                 ref: ref,
-  //                 isOrganizer: widget.isOrganizer,
-  //               ),
-  //             );
-  //           },
-  //         ),
-  //       ],
-  //     ),
-
   @override
   Widget build(BuildContext context) {
     final eventsAsyncValue = ref.watch(eventsStreamProvider);
@@ -373,8 +341,22 @@ class CustomSearchDelegate extends SearchDelegate {
                       style: const TextStyle(fontSize: 13),
                     ),
                     onTap: () {
+                      // Store router reference before closing
+                      final router = GoRouter.of(context);
+
+                      // Close search delegate
                       close(context, null);
-                      context.push('/event/${event.id}', extra: event);
+
+                      // Navigate after search is closed
+                      Future.microtask(() {
+                        router.push(
+                          '/event/${event.id}',
+                          extra: {
+                            'event': event,
+                            'isOrganizer': isOrganizer ?? false,
+                          },
+                        );
+                      });
                     },
                   ),
                 );
@@ -473,8 +455,22 @@ class CustomSearchDelegate extends SearchDelegate {
                       style: const TextStyle(fontSize: 13),
                     ),
                     onTap: () {
+                      // Store router reference before closing
+                      final router = GoRouter.of(context);
+
+                      // Close search delegate
                       close(context, null);
-                      context.push('/event/${event.id}', extra: event);
+
+                      // Navigate after search is closed
+                      Future.microtask(() {
+                        router.push(
+                          '/event/${event.id}',
+                          extra: {
+                            'event': event,
+                            'isOrganizer': isOrganizer ?? false,
+                          },
+                        );
+                      });
                     },
                   ),
                 );
