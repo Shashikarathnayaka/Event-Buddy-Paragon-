@@ -14,7 +14,6 @@ class AppColors {
   static const accentOrange = Color(0xFFF39C12); // Order In orange
   static const accentBlue = Color(0xFF35899E);
 
-  static var primary;
-
-  static var inputBackground; // Custom blue
+  static const primary = Color(0xFF667EEA); // Primary blue/purple
+  static const inputBackground = Color(0xFF2D2B3A); // Input field background
 }

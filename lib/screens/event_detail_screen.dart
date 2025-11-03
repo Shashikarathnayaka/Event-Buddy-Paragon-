@@ -13,12 +13,15 @@ import 'package:go_router/go_router.dart';
 class EventDetailScreen extends StatefulWidget {
   final bool? isOrganizer;
   final DocumentSnapshot eventDoc;
+  final String eventId;
+  final EventActionService joinLeaveService;
+
   const EventDetailScreen({
     super.key,
     required this.isOrganizer,
     required this.eventDoc,
-    required joinLeaveService,
-    required eventId,
+    required this.eventId,
+    required this.joinLeaveService,
   });
 
   @override
@@ -33,19 +36,19 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
   bool _isEventCreator(Map<String, dynamic> eventData) {
     final currentUserId = _auth.currentUser?.uid;
 
+    // Check all possible organizer field names
     final eventOrganizerId =
-        eventData['organizer'] ??
         eventData['organizerId'] ??
+        eventData['organizer'] ??
         eventData['createdBy'] ??
         eventData['userId'] ??
         eventData['creator'];
 
+    debugPrint('=== IS CREATOR CHECK ===');
     debugPrint('Current User ID: $currentUserId');
     debugPrint('Event Organizer ID: $eventOrganizerId');
     debugPrint('All event data keys: ${eventData.keys.toList()}');
     debugPrint('Are they equal? ${currentUserId == eventOrganizerId}');
-    debugPrint('Current user null? ${currentUserId == null}');
-    debugPrint('Organizer null? ${eventOrganizerId == null}');
 
     if (currentUserId == null || eventOrganizerId == null) {
       return false;
@@ -158,31 +161,48 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
         return Dialog(
           backgroundColor: Colors.transparent,
           insetPadding: EdgeInsets.zero,
-          child: Container(
-            width: double.infinity,
-            height: double.infinity,
-            color: Colors.black87,
-            child: Stack(
-              children: [
-                Center(
-                  child: InteractiveViewer(
-                    child: _buildFullScreenImage(url, base64),
-                  ),
-                ),
-                Positioned(
-                  top: 40,
-                  right: 20,
-                  child: IconButton(
-                    onPressed: () => Navigator.of(context).pop(),
-                    icon: const Icon(
-                      Icons.close,
-                      color: Colors.white,
-                      size: 30,
+          child: Stack(
+            children: [
+              // Background with image
+              GestureDetector(
+                onTap: () => Navigator.of(context).pop(),
+                child: Container(
+                  width: double.infinity,
+                  height: double.infinity,
+                  color: Colors.black87,
+                  child: Center(
+                    child: InteractiveViewer(
+                      child: _buildFullScreenImage(url, base64),
                     ),
                   ),
                 ),
-              ],
-            ),
+              ),
+              // Close button - positioned absolutely on top
+              SafeArea(
+                child: Align(
+                  alignment: Alignment.topRight,
+                  child: Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Material(
+                      color: Colors.black54,
+                      shape: const CircleBorder(),
+                      child: InkWell(
+                        onTap: () => Navigator.of(context).pop(),
+                        customBorder: const CircleBorder(),
+                        child: const Padding(
+                          padding: EdgeInsets.all(8.0),
+                          child: Icon(
+                            Icons.close,
+                            color: Colors.white,
+                            size: 24,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
         );
       },
@@ -220,13 +240,22 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
     final userId = _auth.currentUser?.uid;
     final isCreator = _isEventCreator(data);
 
+    // Enhanced debug prints
     debugPrint('widget.isOrganizer: ${widget.isOrganizer}');
     debugPrint('isCreator: $isCreator');
     debugPrint('userId: $userId');
     debugPrint('eventId: $eventId');
+    debugPrint('Event organizerId field: ${data['organizerId']}');
+    debugPrint('Event organizer field: ${data['organizer']}');
+    debugPrint('All event data keys: ${data.keys.toList()}');
+    debugPrint('Should show edit/delete buttons: $isCreator');
 
     return Scaffold(
       appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Colors.white),
+          onPressed: () => context.canPop() ? context.pop() : null,
+        ),
         title: Text(
           data['name'] ?? 'Event Detail',
           style: const TextStyle(
@@ -238,14 +267,14 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
         ),
         iconTheme: const IconThemeData(color: Colors.white),
         backgroundColor: AppColors.card,
-        actions: (widget.isOrganizer == true && isCreator)
+        actions: isCreator
             ? [
                 IconButton(
                   icon: const Icon(Icons.edit, color: Colors.white),
                   onPressed: () async {
                     final updated = await context.push<bool>(
                       Routes.eventEdit,
-                      extra: {'eventDoc': widget.eventDoc, 'organizer': ''},
+                      extra: {'eventDoc': widget.eventDoc},
                     );
 
                     if (updated == true && context.mounted) {
@@ -285,6 +314,8 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
                     );
 
                     if (confirm == true) {
+                      if (!context.mounted) return;
+
                       showDialog(
                         context: context,
                         barrierDismissible: false,
@@ -296,13 +327,13 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
                         await widget.eventDoc.reference.delete();
                         if (context.mounted) {
                           Navigator.pop(context);
+                          Navigator.pop(context);
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(
                               content: Text('Event deleted successfully'),
                               backgroundColor: Colors.green,
                             ),
                           );
-                          Navigator.pop(context);
                         }
                       } catch (e) {
                         if (context.mounted) {
@@ -414,70 +445,30 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
             const SizedBox(height: 20),
             FutureBuilder<DocumentSnapshot?>(
               future: _getOrganizer(
-                data['organizer'] ??
-                    data['organizerId'] ??
+                data['organizerId'] ??
+                    data['organizer'] ??
                     data['createdBy'] ??
                     data['userId'] ??
                     data['creator'],
               ),
               builder: (context, snapshot) {
-                debugPrint('Connection state: ${snapshot.connectionState}');
-                debugPrint('Has data: ${snapshot.hasData}');
-                debugPrint('Snapshot data exists: ${snapshot.data?.exists}');
-
                 if (snapshot.connectionState == ConnectionState.waiting) {
                   return const CircularProgressIndicator();
                 }
 
-                if (!snapshot.hasData || snapshot.data == null) {
+                if (!snapshot.hasData ||
+                    snapshot.data == null ||
+                    !snapshot.data!.exists) {
                   return Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       const Text(
-                        "Organizer: you are the creator this event",
+                        "Organizer:",
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
-                      Text("Organizer ID: ${data['organizer'] ?? 'Not found'}"),
-                      if (isCreator)
-                        Container(
-                          margin: const EdgeInsets.only(top: 8),
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 6,
-                          ),
-                          decoration: BoxDecoration(
-                            color: Colors.blue.shade50,
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: Colors.blue.shade200),
-                          ),
-                          child: const Text(
-                            "You are the creator of this event",
-                            style: TextStyle(
-                              color: Colors.blue,
-                              fontSize: 12,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ),
-                    ],
-                  );
-                }
-
-                if (!snapshot.data!.exists) {
-                  return Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        "Organizer: Not found in database",
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      Text("Organizer ID: ${data['organizer'] ?? 'Not found'}"),
                       if (isCreator)
                         Container(
                           margin: const EdgeInsets.only(top: 8),
@@ -559,7 +550,7 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
           ],
         ),
       ),
-      bottomNavigationBar: userId == null
+      bottomNavigationBar: userId == null || isCreator
           ? const SizedBox.shrink()
           : StreamBuilder<DocumentSnapshot>(
               stream: _firestore.collection('users').doc(userId).snapshots(),

@@ -115,10 +115,11 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         name: 'addEvent',
         builder: (context, state) {
           final extra = state.extra as Map<String, dynamic>?;
-          final organizer = extra?['organizer'] ?? false;
+          final organizer = extra?['organizer'] as String? ?? 'organizer';
           return AddEventScreen(organizer: organizer);
         },
       ),
+
       // Event Detail Route
       GoRoute(
         path: '${Routes.eventDetail}/:id',
@@ -137,15 +138,42 @@ final goRouterProvider = Provider<GoRouter>((ref) {
           );
         },
       ),
+
       // Event Edit Route
+      // GoRoute(
+      //   path: Routes.eventEdit,
+      //   name: 'eventEdit',
+      //   builder: (context, state) {
+      //     final extra = state.extra as Map<String, dynamic>?;
+      //     final eventDoc = extra?['eventDoc'];
+      //     final organizer = extra?['organizer'] ?? '';
+      //     return EventEditScreen(eventDoc: eventDoc, organizer: organizer);
+      //   },
+      // ),
       GoRoute(
         path: Routes.eventEdit,
         name: 'eventEdit',
         builder: (context, state) {
           final extra = state.extra as Map<String, dynamic>?;
-          final eventDoc = extra?['eventDoc'];
-          final organizer = extra?['organizer'] ?? '';
-          return EventEditScreen(eventDoc: eventDoc, organizer: organizer);
+          final eventDoc = extra?['eventDoc'] as DocumentSnapshot?;
+
+          // Get organizer ID from eventDoc instead of extra
+          String organizer = '';
+          if (eventDoc != null) {
+            final data = eventDoc.data() as Map<String, dynamic>?;
+            if (data != null) {
+              organizer =
+                  data['organizer'] ??
+                  data['organizerId'] ??
+                  data['createdBy'] ??
+                  data['userId'] ??
+                  data['creator'] ??
+                  data['uid'] ??
+                  '';
+            }
+          }
+
+          return EventEditScreen(eventDoc: eventDoc!, organizer: organizer);
         },
       ),
     ],

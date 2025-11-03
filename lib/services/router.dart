@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:event_buddy/screens/Login_screen.dart';
 import 'package:event_buddy/screens/add_event_screen.dart';
 import 'package:event_buddy/screens/event_detail_screen.dart';

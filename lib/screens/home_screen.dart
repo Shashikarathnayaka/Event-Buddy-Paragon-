@@ -37,32 +37,70 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     PushNotificationService.subscribeToTopic('all');
   }
 
+  // @override
+  // Widget build(BuildContext context) {
+  //   final eventsAsyncValue = ref.watch(eventsStreamProvider);
+  //   //final eventActionService = ref.read(eventActionServiceProvider);
+
+  //   return Scaffold(
+  //     backgroundColor: AppColors.card,
+  //     appBar: AppBar(
+  //       title: const Text("Home"),
+  //       actions: [
+  //         if (widget.isOrganizer == true)
+  //           IconButton(
+  //             icon: const Icon(Icons.add),
+  //             onPressed: () {
+  //               context.push(Routes.addEvent);
+  //             },
+  //           ),
+  //         IconButton(
+  //           icon: const Icon(Icons.search),
+  //           onPressed: () {
+  //             showSearch(
+  //               context: context,
+  //               delegate: CustomSearchDelegate(
+  //                 ref: ref,
+  //                 isOrganizer: widget.isOrganizer,
+  //               ),
+  //             );
+  //           },
+  //         ),
+  //       ],
+  //     ),
+
   @override
   Widget build(BuildContext context) {
     final eventsAsyncValue = ref.watch(eventsStreamProvider);
-    // final eventActionService = ref.read(eventActionServiceProvider);
 
     return Scaffold(
-      backgroundColor: AppColors.card,
       appBar: AppBar(
         title: const Text("Home"),
+        leading: widget.isOrganizer == true
+            ? IconButton(
+                icon: const Icon(Icons.add),
+                onPressed: () {
+                  context.push(
+                    Routes.addEvent,
+                    extra: {'organizer': 'organizer'},
+                  );
+                },
+              )
+            : null,
         actions: [
-          if (widget.isOrganizer == true)
-            IconButton(
-              icon: const Icon(Icons.add),
-              onPressed: () {
-                context.push(Routes.addEvent);
-              },
-            ),
-          IconButton(
-            icon: const Icon(Icons.search),
-            onPressed: () {
-              showSearch(
-                context: context,
-                delegate: CustomSearchDelegate(
-                  ref: ref,
-                  isOrganizer: widget.isOrganizer,
-                ),
+          Consumer(
+            builder: (context, ref, child) {
+              return IconButton(
+                icon: const Icon(Icons.search),
+                onPressed: () {
+                  showSearch(
+                    context: context,
+                    delegate: CustomSearchDelegate(
+                      isOrganizer: widget.isOrganizer,
+                      ref: ref,
+                    ),
+                  );
+                },
               );
             },
           ),
@@ -180,7 +218,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     ],
                   ),
                   onTap: () {
-                    context.go(
+                    context.push(
                       '${Routes.eventDetail}/${event.id}',
                       extra: {
                         'event': event,
