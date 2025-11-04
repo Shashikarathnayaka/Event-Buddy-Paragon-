@@ -341,13 +341,10 @@ class CustomSearchDelegate extends SearchDelegate {
                       style: const TextStyle(fontSize: 13),
                     ),
                     onTap: () {
-                      // Store router reference before closing
                       final router = GoRouter.of(context);
 
-                      // Close search delegate
                       close(context, null);
 
-                      // Navigate after search is closed
                       Future.microtask(() {
                         router.push(
                           '/event/${event.id}',
@@ -455,13 +452,10 @@ class CustomSearchDelegate extends SearchDelegate {
                       style: const TextStyle(fontSize: 13),
                     ),
                     onTap: () {
-                      // Store router reference before closing
                       final router = GoRouter.of(context);
 
-                      // Close search delegate
                       close(context, null);
 
-                      // Navigate after search is closed
                       Future.microtask(() {
                         router.push(
                           '/event/${event.id}',
